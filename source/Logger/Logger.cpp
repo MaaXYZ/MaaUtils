@@ -46,6 +46,8 @@ std::string LogStream::stdout_string()
     case level::debug:
     case level::trace:
         break;
+    default:
+        break;
     }
 
     return color + utf8_to_crt(buffer_.str()) + "\033[0m";
@@ -66,6 +68,8 @@ std::string_view LogStream::level_str()
         return "DBG";
     case level::trace:
         return "TRC";
+    default:
+        break;
     }
     return "NoLV";
 }
