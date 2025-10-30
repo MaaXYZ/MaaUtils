@@ -34,4 +34,5 @@ if(CCACHE_PROG)
     endif()
 endif()
 
+include_directories(${MAAUTILS_DIR}/include)
 add_subdirectory(${MAAUTILS_DIR}/source)
