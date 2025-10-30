@@ -1,0 +1,3 @@
+[submodule "3rdparty/MaaDeps"]
+	path = 3rdparty/MaaDeps
+	url = https://github.com/MaaXYZ/MaaDeps
