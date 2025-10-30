@@ -60,7 +60,7 @@ public:
     }
 
     void start_logging(std::filesystem::path dir);
-    void set_stdout_level(MaaLoggingLevel level);
+    void set_stdout_level(level lv);
     void flush();
 
 private:
@@ -69,7 +69,7 @@ private:
     {
         count_and_check_flush();
 
-        bool std_out = static_cast<int>(lv) <= stdout_level_;
+        bool std_out = lv <= stdout_level_;
         return LogStream(trace_mutex_, ofs_, lv, std_out, dumps_dir_, std::forward<args_t>(args)...);
     }
 
@@ -91,9 +91,9 @@ private:
     std::filesystem::path dumps_dir_;
 
 #ifdef MAA_DEBUG
-    MaaLoggingLevel stdout_level_ = MaaLoggingLevel_All;
+    level stdout_level_ = level::all;
 #else
-    MaaLoggingLevel stdout_level_ = MaaLoggingLevel_Error;
+    level stdout_level_ = level::error;
 #endif
     std::ofstream ofs_;
     std::mutex trace_mutex_;

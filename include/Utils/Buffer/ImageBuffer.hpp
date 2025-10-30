@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BufferTypes.hpp"
-#include "Conf/Conf.h"
+#include "Utils/Conf.h"
 #include "ListBuffer.hpp"
 
 MAA_SUPPRESS_CV_WARNINGS_BEGIN

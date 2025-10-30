@@ -90,9 +90,9 @@ void Logger::start_logging(std::filesystem::path dir)
     reinit();
 }
 
-void Logger::set_stdout_level(MaaLoggingLevel level)
+void Logger::set_stdout_level(level lv)
 {
-    stdout_level_ = level;
+    stdout_level_ = lv;
 }
 
 void Logger::flush()

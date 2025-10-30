@@ -15,10 +15,8 @@
 
 #include <meojson/json.hpp>
 
-#include "MaaFramework/MaaDef.h"
-#include "MaaFramework/MaaPort.h"
-
-#include "Conf/Conf.h"
+#include "Utils/Port.h"
+#include "Utils/Conf.h"
 #include "Utils/Time.hpp"
 
 namespace cv
@@ -37,12 +35,14 @@ inline std::ostream& operator<<(std::ostream& os, const std::chrono::millisecond
 
 enum class level
 {
-    fatal = MaaLoggingLevel_Fatal,
-    error = MaaLoggingLevel_Error,
-    warn = MaaLoggingLevel_Warn,
-    info = MaaLoggingLevel_Info,
-    debug = MaaLoggingLevel_Debug,
-    trace = MaaLoggingLevel_Trace,
+    off = 0,
+    fatal = 1,
+    error = 2,
+    warn = 3,
+    info = 4,
+    debug = 5,
+    trace = 6,
+    all = 7,
 };
 
 struct MAA_UTILS_API separator

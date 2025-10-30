@@ -5,8 +5,8 @@
 #include <string_view>
 
 #include "BoostIO.hpp"
-#include "Conf/Conf.h"
-#include "MaaFramework/MaaPort.h"
+#include "Utils/Conf.h"
+#include "Utils/Port.h"
 
 MAA_NS_BEGIN
 
