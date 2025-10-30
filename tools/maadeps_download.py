@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 basedir = Path(__file__).parent.parent
-maadeps_dir = Path(basedir, "3rdparty", "MaaDeps")
+maadeps_dir = Path(basedir, "MaaDeps")
 download_dir = Path(maadeps_dir, "tarball")
 
 

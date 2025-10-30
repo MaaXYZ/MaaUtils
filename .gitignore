@@ -443,8 +443,5 @@ FodyWeavers.xsd
 .DS_Store
 .nuke/temp/*
 
-!include/MaaToolkit/Win32
-
-export_targets.cmake
-maa_pi_config.json
-recording/*
+# MaaDeps
+MaaDeps

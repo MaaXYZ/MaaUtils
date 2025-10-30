@@ -8,7 +8,7 @@ set(Boost_NO_WARN_NEW_VERSIONS ON)
 set(MAAUTILS_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MAAUTILS_DIR}/cmake/modules")
-set(MAADEPS_DIR ${MAAUTILS_DIR}/3rdparty/MaaDeps)
+set(MAADEPS_DIR ${MAAUTILS_DIR}/MaaDeps)
 include(${MAADEPS_DIR}/maadeps.cmake)
 
 # Basic compile and link configuration
