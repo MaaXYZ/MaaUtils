@@ -34,4 +34,4 @@ if(CCACHE_PROG)
 endif()
 
 include_directories(${MAAUTILS_DIR}/include)
-add_subdirectory(${MAAUTILS_DIR}/source)
+add_subdirectory(${MAAUTILS_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/MaaUtils)

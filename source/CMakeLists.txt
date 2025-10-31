@@ -1,5 +1,5 @@
 file(GLOB_RECURSE maa_utils_src *.h *.hpp *.cpp)
-file(GLOB_RECURSE maa_utils_header ${MAAUTILS_DIR}/include/Utils/*)
+file(GLOB_RECURSE maa_utils_header ${MAAUTILS_DIR}/include/MaaUtils/*)
 
 add_library(MaaUtils SHARED ${maa_utils_src} ${maa_utils_header})
 target_include_directories(MaaUtils PRIVATE ${MAAUTILS_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR})
