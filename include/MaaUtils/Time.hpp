@@ -12,7 +12,7 @@
 #include <format>
 #include <string>
 
-#include "Utils/Conf.h"
+#include "MaaUtils/Conf.h"
 
 // Possible related issue https://github.com/llvm/llvm-project/issues/99982
 

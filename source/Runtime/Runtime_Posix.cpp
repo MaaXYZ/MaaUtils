@@ -1,9 +1,9 @@
 #ifndef _WIN32
-#include "Utils/Runtime.h"
+#include "MaaUtils/Runtime.h"
 
 #include <dlfcn.h>
 
-#include "Utils/Platform.h"
+#include "MaaUtils/Platform.h"
 
 MAA_NS_BEGIN
 

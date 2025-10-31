@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "IOStream.h"
-#include "Utils/Port.h"
-#include "Utils/NonCopyable.hpp"
+#include "MaaUtils/Port.h"
+#include "MaaUtils/NonCopyable.hpp"
 
 MAA_NS_BEGIN
 

@@ -2,8 +2,8 @@
 
 #include <type_traits>
 
-#include "Utils/Conf.h"
-#include "Utils/NonCopyable.hpp"
+#include "MaaUtils/Conf.h"
+#include "MaaUtils/NonCopyable.hpp"
 
 MAA_NS_BEGIN
 

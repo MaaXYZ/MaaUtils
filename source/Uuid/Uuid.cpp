@@ -1,4 +1,4 @@
-#include "Utils/Uuid.h"
+#include "MaaUtils/Uuid.h"
 
 MAA_SUPPRESS_BOOST_WARNINGS_BEGIN
 #include <boost/uuid/uuid_generators.hpp>

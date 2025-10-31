@@ -21,7 +21,6 @@ find_package(Boost REQUIRED CONFIG COMPONENTS system)
 find_package(ZLIB REQUIRED)
 find_package(fastdeploy_ppocr REQUIRED)
 find_package(ONNXRuntime REQUIRED)
-find_package(cppzmq REQUIRED)
 
 find_program(CCACHE_PROG ccache)
 

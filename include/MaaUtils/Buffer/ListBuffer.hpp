@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "BufferTypes.hpp"
-#include "Utils/Conf.h"
+#include "MaaUtils/Conf.h"
 
 MAA_NS_BEGIN
 

@@ -1,6 +1,6 @@
 #ifdef __APPLE__
 
-#include "Utils/Platform.h"
+#include "MaaUtils/Platform.h"
 
 #include <cstdlib>
 #include <dlfcn.h>
@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "Utils/Logger.h"
+#include "MaaUtils/Logger.h"
 
 MAA_NS_BEGIN
 

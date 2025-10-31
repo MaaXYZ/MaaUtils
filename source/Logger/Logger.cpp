@@ -1,9 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "Utils/Logger.h"
+#include "MaaUtils/Logger.h"
 
 #ifdef _WIN32
-#include "Utils/SafeWindows.hpp"
+#include "MaaUtils/SafeWindows.hpp"
 
 #include <io.h>
 #include <sysinfoapi.h>
@@ -11,10 +11,10 @@
 #include <sys/utsname.h>
 #endif
 
-#include "Utils/Encoding.h"
-#include "Utils/ImageIo.h"
-#include "Utils/Platform.h"
-#include "Utils/Uuid.h"
+#include "MaaUtils/Encoding.h"
+#include "MaaUtils/ImageIo.h"
+#include "MaaUtils/Platform.h"
+#include "MaaUtils/Uuid.h"
 
 #pragma message("MaaUtils MAA_VERSION: " MAA_VERSION)
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utils/Conf.h"
+#include "MaaUtils/Conf.h"
 
 MAA_SUPPRESS_CV_WARNINGS_BEGIN
 #include <opencv2/core/mat.hpp>

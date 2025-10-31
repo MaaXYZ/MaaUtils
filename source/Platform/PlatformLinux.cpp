@@ -9,8 +9,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "Utils/Logger.h"
-#include "Utils/Platform.h"
+#include "MaaUtils/Logger.h"
+#include "MaaUtils/Platform.h"
 
 MAA_NS_BEGIN
 

@@ -4,7 +4,7 @@
 #include <fstream>
 #include <ranges>
 
-#include "Utils/Conf.h"
+#include "MaaUtils/Conf.h"
 
 MAA_NS_BEGIN
 

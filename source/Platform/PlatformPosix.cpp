@@ -1,6 +1,6 @@
 #ifndef _WIN32
 
-#include "Utils/Platform.h"
+#include "MaaUtils/Platform.h"
 
 #include <unistd.h>
 

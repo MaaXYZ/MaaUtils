@@ -1,11 +1,11 @@
-#include "Utils/Encoding.h"
+#include "MaaUtils/Encoding.h"
 
 #include <cstdint>
 #include <iostream>
 #include <regex>
 #include <string>
 
-#include "Utils/Logger.h"
+#include "MaaUtils/Logger.h"
 
 MAA_NS_BEGIN
 

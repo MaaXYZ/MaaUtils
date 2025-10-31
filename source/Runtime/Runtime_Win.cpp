@@ -1,10 +1,10 @@
 #ifdef _WIN32
-#include "Utils/Runtime.h"
+#include "MaaUtils/Runtime.h"
 
 #include <memory>
 
-#include "Utils/Platform.h"
-#include "Utils/SafeWindows.hpp"
+#include "MaaUtils/Platform.h"
+#include "MaaUtils/SafeWindows.hpp"
 
 MAA_NS_BEGIN
 

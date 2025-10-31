@@ -9,13 +9,13 @@
 #include <type_traits>
 
 #ifdef _WIN32
-#include "Utils/SafeWindows.hpp"
+#include "MaaUtils/SafeWindows.hpp"
 #else
 #include <sys/types.h>
 #endif
 
-#include "Utils/Conf.h"
-#include "Utils/Port.h"
+#include "MaaUtils/Conf.h"
+#include "MaaUtils/Port.h"
 
 MAA_NS_BEGIN
 

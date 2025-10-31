@@ -1,7 +1,7 @@
 #ifdef _WIN32
 
-#include "Utils/GpuOption.h"
-#include "Utils/SafeWindows.hpp"
+#include "MaaUtils/GpuOption.h"
+#include "MaaUtils/SafeWindows.hpp"
 
 #include <initguid.h>
 
@@ -11,8 +11,8 @@
 #include <devpropdef.h>
 #include <dxgi1_6.h>
 
-#include "Utils/Logger.h"
-#include "Utils/StringMisc.hpp"
+#include "MaaUtils/Logger.h"
+#include "MaaUtils/StringMisc.hpp"
 
 MAA_NS_BEGIN
 

@@ -1,6 +1,6 @@
 #if !defined(__APPLE__) && !defined(_WIN32)
 
-#include "Utils/GpuOption.h"
+#include "MaaUtils/GpuOption.h"
 
 MAA_NS_BEGIN
 

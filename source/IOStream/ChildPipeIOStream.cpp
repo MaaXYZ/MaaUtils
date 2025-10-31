@@ -1,7 +1,7 @@
-#include "Utils/IOStream/ChildPipeIOStream.h"
+#include "MaaUtils/IOStream/ChildPipeIOStream.h"
 
-#include "Utils/Encoding.h"
-#include "Utils/Logger.h"
+#include "MaaUtils/Encoding.h"
+#include "MaaUtils/Logger.h"
 
 MAA_NS_BEGIN
 

@@ -6,10 +6,10 @@
 #include <meojson/json.hpp>
 #include <variant>
 
-#include "Utils/NoWarningCVMat.hpp"
+#include "MaaUtils/NoWarningCVMat.hpp"
 
-#include "Utils/Encoding.h"
-#include "Utils/Platform.h"
+#include "MaaUtils/Encoding.h"
+#include "MaaUtils/Platform.h"
 
 namespace json::ext
 {

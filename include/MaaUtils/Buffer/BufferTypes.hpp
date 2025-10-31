@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "Utils/NoWarningCVMat.hpp"
+#include "MaaUtils/NoWarningCVMat.hpp"
 
 struct MaaStringBuffer
 {

@@ -1,6 +1,6 @@
-#include "Utils/IOStream/IOStream.h"
+#include "MaaUtils/IOStream/IOStream.h"
 
-#include "Utils/Time.hpp"
+#include "MaaUtils/Time.hpp"
 
 MAA_NS_BEGIN
 

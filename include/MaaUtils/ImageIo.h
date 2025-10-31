@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "Utils/NoWarningCV.hpp"
+#include "MaaUtils/NoWarningCV.hpp"
 
-#include "Utils/File.hpp"
-#include "Utils/Platform.h"
+#include "MaaUtils/File.hpp"
+#include "MaaUtils/Platform.h"
 
 MAA_NS_BEGIN
 

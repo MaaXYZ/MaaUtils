@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Utils/LoggerUtils.h"
-#include "Utils/ScopeLeave.hpp"
+#include "MaaUtils/LoggerUtils.h"
+#include "MaaUtils/ScopeLeave.hpp"
 
 MAA_LOG_NS_BEGIN
 

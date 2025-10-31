@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BufferTypes.hpp"
-#include "Utils/Conf.h"
+#include "MaaUtils/Conf.h"
 #include "ListBuffer.hpp"
 
 MAA_NS_BEGIN

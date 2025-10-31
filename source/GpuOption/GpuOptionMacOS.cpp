@@ -1,6 +1,6 @@
 #ifdef __APPLE__
 
-#include "Utils/GpuOption.h"
+#include "MaaUtils/GpuOption.h"
 
 MAA_NS_BEGIN
 
