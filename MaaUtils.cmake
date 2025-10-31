@@ -2,6 +2,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 cmake_policy(SET CMP0155 OLD)
 
+option(BUILD_MAA_UTILS "build maa utils" ON)
+
 set(Boost_NO_WARN_NEW_VERSIONS ON)
 
 # set(CMAKE_EXPORT_COMPILE_COMMANDS ON) see below
@@ -34,4 +36,7 @@ if(CCACHE_PROG)
 endif()
 
 include_directories(${MAAUTILS_DIR}/include)
-add_subdirectory(${MAAUTILS_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/MaaUtils)
+
+if(BUILD_MAA_UTILS)
+    add_subdirectory(${MAAUTILS_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/MaaUtils)
+endif()
