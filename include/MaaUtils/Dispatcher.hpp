@@ -13,7 +13,7 @@ template <typename SinkT>
 class Dispatcher
 {
 public:
-    using ObserverId = MaaId;
+    using ObserverId = int64_t;
 
     virtual ~Dispatcher() = default;
 
@@ -21,12 +21,12 @@ public:
     ObserverId register_observer(const std::shared_ptr<SinkT>& observer)
     {
         if (!observer) {
-            return MaaInvalidId;
+            return 0;
         }
 
         auto it = observers_.emplace(++s_global_ob_id, observer).first;
         if (it == observers_.end()) {
-            return MaaInvalidId;
+            return 0;
         }
         return it->first;
     }
