@@ -20,6 +20,16 @@ const std::filesystem::path& library_dir()
     return s_library_dir_cache;
 }
 
+std::filesystem::path get_library_path(void* addr)
+{
+    Dl_info dl_info {};
+    if (dladdr(addr, &dl_info) == 0) {
+        return {};
+    }
+
+    return { dl_info.dli_fname };
+}
+
 void init_library_dir()
 {
     Dl_info dl_info {};
