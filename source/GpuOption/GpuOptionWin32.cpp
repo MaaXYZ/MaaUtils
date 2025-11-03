@@ -150,6 +150,15 @@ std::optional<int> perfer_gpu()
         return false;
     }
 
+    struct GpuInfo
+    {
+        UINT adapter_index = 0;
+        std::wstring description;
+        UINT64 dedicated_video_memory;
+    };
+
+    std::vector<GpuInfo> available_gpus;
+
     for (UINT adapter_index = 0;; ++adapter_index) {
         IDXGIAdapter1* dxgi_adapter = nullptr;
         OnScopeLeave([&]() {
@@ -215,13 +224,32 @@ std::optional<int> perfer_gpu()
             continue;
         }
 
-        LogInfo << "prefer adapter found" << VAR(adapter_index) << VAR(adapter_desc) << VAR(instance_path);
+        available_gpus.emplace_back(
+            GpuInfo { .adapter_index = adapter_index,
+                      .description = std::move(adapter_desc),
+                      .dedicated_video_memory = desc.DedicatedVideoMemory });
 
-        return adapter_index;
+        LogInfo << "available gpu found" << VAR(adapter_index) << VAR(adapter_desc) << VAR(desc.DedicatedVideoMemory);
     }
 
-    LogInfo << "no prefer adapter found";
-    return std::nullopt;
+    if (available_gpus.empty()) {
+        LogInfo << "no available gpu found";
+        return std::nullopt;
+    }
+
+    // 简单按显存大小选最优，后续可能考虑更多因素
+    auto best_gpu_iter = std::max_element(available_gpus.begin(), available_gpus.end(), [](const GpuInfo& lhs, const GpuInfo& rhs) {
+        return lhs.dedicated_video_memory < rhs.dedicated_video_memory;
+    });
+
+    if (best_gpu_iter == available_gpus.end()) {
+        LogError << "max_element failed";
+        return std::nullopt;
+    }
+
+    const GpuInfo& best_gpu = *best_gpu_iter;
+    LogInfo << "Best gpu selected" << VAR(best_gpu.adapter_index) << VAR(best_gpu.description) << VAR(best_gpu.dedicated_video_memory);
+    return best_gpu.adapter_index;
 }
 
 MAA_NS_END
