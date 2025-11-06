@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "master"
+  workflow_dispatch:
 
 jobs:
     dispatch_maafw:
@@ -15,4 +16,5 @@ jobs:
                 token: ${{ secrets.MAAFRAMEWORKTRIGGER }}
                 repository: MaaXYZ/MaaFramework
                 event-type: MaaUtilsUpdated
+
 
