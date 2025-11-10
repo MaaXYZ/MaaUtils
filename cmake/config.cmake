@@ -35,7 +35,7 @@ else()
     endif()
 endif()
 
-if(LINUX)
+if(LINUX AND WITH_RPATH_LIBRARY)
     function(copy_and_add_rpath_library LIBNAME)
         execute_process(
             COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${LIBNAME}.so.1 -target ${CMAKE_CXX_COMPILER_TARGET} --sysroot=${CMAKE_SYSROOT}
