@@ -85,4 +85,23 @@ public:
         return true;
     }
 };
+
+template <typename T>
+class jsonization<std::optional<T>>
+{
+public:
+    json::value to_json(const std::optional<T>& optional) const { return optional ? json::value(*optional) : json::value(); }
+
+    bool check_json(const json::value& json) const { return json.is_null() || json.is<T>(); }
+
+    bool from_json(const json::value& json, std::optional<T>& optional) const
+    {
+        if (json.is_null()) {
+            optional = std::nullopt;
+            return true;
+        }
+        optional = json.as<T>();
+        return true;
+    }
+};
 } // namespace json::ext
