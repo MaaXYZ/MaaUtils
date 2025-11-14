@@ -102,8 +102,8 @@ public:
 template <typename T>
 concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
 
-template <typename T>
-requires has_output_operator<T>
+template <has_output_operator T>
+requires(!std::is_constructible_v<T, json::value>)
 class jsonization<T>
 {
 public:
@@ -118,5 +118,4 @@ public:
 
     bool from_json(const json::value&, T&) const { return false; }
 };
-
 } // namespace json::ext

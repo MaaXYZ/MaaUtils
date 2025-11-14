@@ -119,6 +119,10 @@ inline bool value::is() const noexcept
     if constexpr (std::is_same_v<value, value_t>) {
         return true;
     }
+    else if constexpr (_utils::has_check_json_in_member<value_t>::value) {
+        value_t temp {};
+        return temp.check_json(*this);
+    }
     else if constexpr (_utils::has_check_json_in_templ_spec<value_t>::value) {
         return ext::jsonization<value_t>().check_json(*this);
     }
@@ -397,6 +401,13 @@ inline value_t value::as() const&
     if constexpr (std::is_same_v<value, value_t>) {
         return *this;
     }
+    else if constexpr (_utils::has_from_json_in_member<value_t>::value) {
+        value_t dst {};
+        if (!dst.from_json(*this)) {
+            throw exception("Wrong JSON");
+        }
+        return dst;
+    }
     else if constexpr (_utils::has_from_json_in_templ_spec<value_t>::value) {
         value_t dst {};
         if (!ext::jsonization<value_t>().from_json(*this, dst)) {
@@ -414,6 +425,13 @@ inline value_t value::as() &&
 {
     if constexpr (std::is_same_v<value, value_t>) {
         return std::move(*this);
+    }
+    else if constexpr (_utils::has_from_json_in_member<value_t>::value) {
+        value_t dst {};
+        if (!dst.from_json(*this)) {
+            throw exception("Wrong JSON");
+        }
+        return dst;
     }
     else if constexpr (_utils::has_move_from_json_in_templ_spec<value_t>::value) {
         value_t dst {};

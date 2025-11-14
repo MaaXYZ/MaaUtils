@@ -394,17 +394,17 @@ inline std::string unescape_string(const std::string& str)
 
 inline std::string true_string()
 {
-    return "true";
+    return { 't', 'r', 'u', 'e' };
 }
 
 inline std::string false_string()
 {
-    return "false";
+    return { 'f', 'a', 'l', 's', 'e' };
 }
 
 inline std::string null_string()
 {
-    return "null";
+    return { 'n', 'u', 'l', 'l' };
 }
 
 template <typename any_t>

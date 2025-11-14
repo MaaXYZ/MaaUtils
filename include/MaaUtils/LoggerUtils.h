@@ -25,13 +25,6 @@ class Mat;
 
 MAA_LOG_NS_BEGIN
 
-#ifdef __GNUC__
-inline std::ostream& operator<<(std::ostream& os, const std::chrono::milliseconds& ms)
-{
-    return os << ms.count() << "ms";
-}
-#endif
-
 enum class level
 {
     off = 0,

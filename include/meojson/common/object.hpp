@@ -39,9 +39,18 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<jsonization_t, value>
-                && !std::is_same_v<jsonization_t, object>
-                && _utils::has_to_json_in_templ_spec<jsonization_t>::value
+            !std::is_same_v<std::remove_cvref_t<jsonization_t>, object> && _utils::has_to_json_in_member<jsonization_t>::value
+                && !_utils::has_to_json_object_in_templ_spec<jsonization_t>::value,
+            bool> = true>
+    object(const jsonization_t& val)
+        : object(val.to_json())
+    {
+    }
+
+    template <
+        typename jsonization_t,
+        std::enable_if_t<
+            !std::is_same_v<std::remove_cvref_t<jsonization_t>, object> && _utils::has_to_json_in_templ_spec<jsonization_t>::value
                 && !_utils::has_to_json_object_in_templ_spec<jsonization_t>::value,
             bool> = true>
     object(const jsonization_t& val)
@@ -52,8 +61,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<jsonization_t, value> && !std::is_same_v<jsonization_t, object>
-                && _utils::has_to_json_object_in_templ_spec<jsonization_t>::value,
+            !std::is_same_v<std::remove_cvref_t<jsonization_t>, object> && _utils::has_to_json_object_in_templ_spec<jsonization_t>::value,
             bool> = true>
     object(const jsonization_t& val)
         : object(ext::jsonization<jsonization_t>().to_json_object(val))
@@ -63,9 +71,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_reference_t<jsonization_t>, value>
-                && !std::is_same_v<std::remove_reference_t<jsonization_t>, object>
-                && std::is_rvalue_reference_v<jsonization_t&&>
+            !std::is_same_v<std::remove_cvref_t<jsonization_t>, object> && std::is_rvalue_reference_v<jsonization_t&&>
                 && _utils::has_move_to_json_in_templ_spec<jsonization_t>::value
                 && !_utils::has_move_to_json_object_in_templ_spec<jsonization_t>::value,
             bool> = true>
@@ -77,42 +83,11 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_reference_t<jsonization_t>, value>
-                && !std::is_same_v<std::remove_reference_t<jsonization_t>, object>
-                && std::is_rvalue_reference_v<jsonization_t&&>
+            !std::is_same_v<std::remove_cvref_t<jsonization_t>, object> && std::is_rvalue_reference_v<jsonization_t&&>
                 && _utils::has_move_to_json_object_in_templ_spec<jsonization_t>::value,
             bool> = true>
     object(jsonization_t&& val)
         : object(ext::jsonization<jsonization_t>().move_to_json_object(std::move(val)))
-    {
-    }
-
-    template <
-        typename jsonization_t,
-        std::enable_if_t<
-            !std::is_same_v<jsonization_t, value>
-                && !std::is_same_v<jsonization_t, object>
-                && !_utils::has_to_json_in_templ_spec<jsonization_t>::value
-                && !_utils::has_to_json_object_in_templ_spec<jsonization_t>::value
-                && _utils::has_to_json_in_member<jsonization_t>::value,
-            bool> = true>
-    object(const jsonization_t& val)
-        : object(val.to_json().as_object())
-    {
-    }
-
-    template <
-        typename jsonization_t,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_reference_t<jsonization_t>, value>
-                && !std::is_same_v<std::remove_reference_t<jsonization_t>, object>
-                && std::is_rvalue_reference_v<jsonization_t&&>
-                && !_utils::has_move_to_json_in_templ_spec<jsonization_t>::value
-                && !_utils::has_move_to_json_object_in_templ_spec<jsonization_t>::value
-                && _utils::has_to_json_in_member<jsonization_t>::value,
-            bool> = true>
-    object(jsonization_t&& val)
-        : object(val.to_json().as_object())
     {
     }
 
