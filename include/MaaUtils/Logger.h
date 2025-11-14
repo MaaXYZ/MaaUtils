@@ -70,7 +70,7 @@ private:
         count_and_check_flush();
 
         bool std_out = lv <= stdout_level_;
-        return LogStream(trace_mutex_, ofs_, lv, std_out, dumps_dir_, std::forward<args_t>(args)...);
+        return LogStream(trace_mutex_, ofs_, lv, std_out, std::forward<args_t>(args)...);
     }
 
 private:
@@ -88,7 +88,6 @@ private:
 private:
     std::filesystem::path log_dir_;
     std::filesystem::path log_path_;
-    std::filesystem::path dumps_dir_;
 
 #ifdef MAA_DEBUG
     level stdout_level_ = level::all;

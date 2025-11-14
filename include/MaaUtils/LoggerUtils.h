@@ -13,10 +13,9 @@
 #include <thread>
 #include <type_traits>
 
-#include <meojson/json.hpp>
-
-#include "MaaUtils/Port.h"
 #include "MaaUtils/Conf.h"
+#include "MaaUtils/JsonExt.hpp"
+#include "MaaUtils/Port.h"
 #include "MaaUtils/Time.hpp"
 
 namespace cv
@@ -61,74 +60,15 @@ struct MAA_UTILS_API separator
     std::string_view str;
 };
 
-template <typename T>
-concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
-
-class MAA_UTILS_API StringConverter
-{
-public:
-    StringConverter(std::filesystem::path dumps_dir)
-        : dumps_dir_(std::move(dumps_dir))
-    {
-    }
-
-public:
-    std::string operator()(const std::filesystem::path& path) const;
-    std::string operator()(const std::wstring& wstr) const;
-    std::string operator()(const cv::Mat& image) const;
-
-    template <typename T>
-    std::string operator()(const std::optional<T>& value) const
-    {
-        if (!value) {
-            return "nullopt";
-        }
-        return this->operator()(*value);
-    }
-
-    template <typename T>
-    requires has_output_operator<T>
-    std::string operator()(const T& value) const
-    {
-        std::stringstream ss;
-        if constexpr (std::same_as<bool, std::decay_t<T>>) {
-            ss << std::boolalpha;
-        }
-        ss << value;
-        return std::move(ss).str();
-    }
-
-    template <typename T>
-    requires(std::is_constructible_v<json::value, T> && !has_output_operator<T>)
-    std::string operator()(const T& value) const
-    {
-        return json::value(value).to_string();
-    }
-
-    template <typename T>
-    requires(std::is_function_v<std::remove_pointer_t<std::decay_t<T>>>)
-    void operator()(T&&) const
-    {
-        static_assert(!sizeof(T), "Function type is not supported.");
-    }
-
-private:
-    const std::filesystem::path dumps_dir_;
-};
-
-template <typename T>
-concept string_convertible = requires { std::declval<StringConverter>()(std::declval<T>()); };
-
 class MAA_UTILS_API LogStream
 {
 public:
     template <typename... args_t>
-    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out, std::filesystem::path dumps_dir, args_t&&... args)
+    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out, args_t&&... args)
         : mutex_(m)
         , stream_(s)
         , lv_(lv)
         , stdout_(std_out)
-        , string_converter_(std::move(dumps_dir))
     {
         stream_props(std::forward<args_t>(args)...);
     }
@@ -169,12 +109,7 @@ private:
     template <typename T>
     void stream(T&& value, const separator& sep)
     {
-        if constexpr (string_convertible<T>) {
-            buffer_ << string_converter_(std::forward<T>(value)) << sep.str;
-        }
-        else {
-            buffer_ << json::serialize(std::forward<T>(value), string_converter_).dumps() << sep.str;
-        }
+        buffer_ << json::value(std::forward<T>(value)).dumps() << sep.str;
     }
 
     template <typename... args_t>
@@ -202,7 +137,6 @@ private:
     std::ofstream& stream_;
     const level lv_ = level::fatal;
     const bool stdout_ = false;
-    const StringConverter string_converter_;
 
     separator sep_ = separator::space;
     std::stringstream buffer_;

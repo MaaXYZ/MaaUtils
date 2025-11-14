@@ -1,10 +1,12 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
+#include <format>
 #include <string>
+#include <variant>
 
 #include <meojson/json.hpp>
-#include <variant>
 
 #include "MaaUtils/NoWarningCVMat.hpp"
 
@@ -13,21 +15,6 @@
 
 namespace json::ext
 {
-template <>
-class jsonization<std::filesystem::path>
-{
-public:
-    json::value to_json(const std::filesystem::path& path) const { return MAA_NS::path_to_utf8_string(path); }
-
-    bool check_json(const json::value& json) const { return json.is_string(); }
-
-    bool from_json(const json::value& json, std::filesystem::path& path) const
-    {
-        path = MAA_NS::path(json.as_string());
-        return true;
-    }
-};
-
 template <>
 class jsonization<std::monostate>
 {
@@ -52,6 +39,32 @@ public:
         wstr = MAA_NS::to_u16(json.as_string());
         return true;
     }
+};
+
+template <>
+class jsonization<std::filesystem::path>
+{
+public:
+    json::value to_json(const std::filesystem::path& path) const { return MAA_NS::path_to_utf8_string(path); }
+
+    bool check_json(const json::value& json) const { return json.is_string(); }
+
+    bool from_json(const json::value& json, std::filesystem::path& path) const
+    {
+        path = MAA_NS::path(json.as_string());
+        return true;
+    }
+};
+
+template <>
+class jsonization<std::chrono::milliseconds>
+{
+public:
+    json::value to_json(const std::chrono::milliseconds& ms) const { return std::format("{}ms", ms.count()); }
+
+    bool check_json(const json::value&) const { return false; }
+
+    bool from_json(const json::value&, const std::chrono::milliseconds&) const { return false; }
 };
 
 template <>
@@ -87,21 +100,23 @@ public:
 };
 
 template <typename T>
-class jsonization<std::optional<T>>
+concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
+
+template <typename T>
+requires has_output_operator<T>
+class jsonization<T>
 {
 public:
-    json::value to_json(const std::optional<T>& optional) const { return optional ? json::value(*optional) : json::value(); }
-
-    bool check_json(const json::value& json) const { return json.is_null() || json.is<T>(); }
-
-    bool from_json(const json::value& json, std::optional<T>& optional) const
+    json::value to_json(const T& value) const
     {
-        if (json.is_null()) {
-            optional = std::nullopt;
-            return true;
-        }
-        optional = json.as<T>();
-        return true;
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
     }
+
+    bool check_json(const json::value&) const { return false; }
+
+    bool from_json(const json::value&, T&) const { return false; }
 };
+
 } // namespace json::ext

@@ -85,11 +85,9 @@ void Logger::start_logging(std::filesystem::path dir)
     log_dir_ = std::move(dir);
     if (log_dir_.empty()) {
         log_path_.clear();
-        dumps_dir_.clear();
     }
     else {
         log_path_ = log_dir_ / kLogFilename;
-        dumps_dir_ = log_dir_ / kDumpsDirname;
     }
     reinit();
 }
@@ -142,10 +140,6 @@ bool Logger::rotate()
     if (std::filesystem::exists(dumps_bak_path)) {
         std::filesystem::remove_all(dumps_bak_path, ec);
     }
-    if (std::filesystem::exists(dumps_dir_)) {
-        std::filesystem::rename(dumps_dir_, dumps_bak_path, ec);
-    }
-
     return true;
 }
 
@@ -247,34 +241,6 @@ void Logger::count_and_check_flush()
 LogStream Logger::internal_dbg()
 {
     return debug("Logger");
-}
-
-std::string StringConverter::operator()(const std::filesystem::path& path) const
-{
-    return path_to_utf8_string(path);
-}
-
-std::string StringConverter::operator()(const std::wstring& wstr) const
-{
-    return from_u16(wstr);
-}
-
-std::string StringConverter::operator()(const cv::Mat& image) const
-{
-    if (dumps_dir_.empty()) {
-        return "Not logging";
-    }
-    if (image.empty()) {
-        return "Empty image";
-    }
-
-    std::string filename = std::format("{}-{}.png", format_now_for_filename(), make_uuid());
-    auto filepath = dumps_dir_ / path(filename);
-    bool ret = MAA_NS::imwrite(filepath, image);
-    if (!ret) {
-        return "Failed to write image";
-    }
-    return this->operator()(filepath);
 }
 
 MAA_LOG_NS_END
