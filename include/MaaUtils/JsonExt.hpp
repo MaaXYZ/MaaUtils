@@ -99,6 +99,22 @@ public:
     }
 };
 
+template <>
+class jsonization<cv::Size>
+{
+public:
+    json::value to_json(const cv::Size& size) const { return json::array { size.width, size.height }; }
+
+    bool check_json(const json::value& json) const { return json.is<std::vector<int>>() && json.as_array().size() == 2; }
+
+    bool from_json(const json::value& json, cv::Size& size) const
+    {
+        auto arr = json.as<std::vector<int>>();
+        size = cv::Size(arr[0], arr[1]);
+        return true;
+    }
+};
+
 template <typename T>
 concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
 
