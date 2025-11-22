@@ -86,6 +86,12 @@ inline value::value(std::string str)
 {
 }
 
+inline value::value(std::string_view str)
+    : _type(value_type::string)
+    , _raw_data(std::string(str))
+{
+}
+
 inline value::value(std::nullptr_t)
     : _type(value_type::null)
 {

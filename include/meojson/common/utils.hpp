@@ -147,7 +147,7 @@ template <typename T>
 class has_to_json_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().to_json(std::declval<U>()), std::true_type());
+    static auto test(int) -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().to_json(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -160,7 +160,8 @@ template <typename T>
 class has_check_json_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().check_json(std::declval<value>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().check_json(std::declval<value>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -174,7 +175,7 @@ class has_from_json_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().from_json(std::declval<value>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().from_json(std::declval<value>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -187,7 +188,7 @@ template <typename T>
 class has_move_to_json_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().move_to_json(std::declval<U>()), std::true_type());
+    static auto test(int) -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_to_json(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -201,7 +202,7 @@ class has_move_from_json_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().move_from_json(std::declval<value>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_from_json(std::declval<value>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -214,7 +215,7 @@ template <typename T>
 class has_to_json_array_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().to_json_array(std::declval<U>()), std::true_type());
+    static auto test(int) -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().to_json_array(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -227,7 +228,8 @@ template <typename T>
 class has_check_json_array_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().check_json_array(std::declval<array>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().check_json_array(std::declval<array>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -241,7 +243,7 @@ class has_from_json_array_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().from_json_array(std::declval<array>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().from_json_array(std::declval<array>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -254,7 +256,8 @@ template <typename T>
 class has_move_to_json_array_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().move_to_json_array(std::declval<U>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_to_json_array(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -268,7 +271,7 @@ class has_move_from_json_array_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().move_from_json_array(std::declval<array>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_from_json_array(std::declval<array>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -281,7 +284,8 @@ template <typename T>
 class has_to_json_object_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().to_json_object(std::declval<U>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().to_json_object(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -294,8 +298,8 @@ template <typename T>
 class has_check_json_object_in_templ_spec
 {
     template <typename U>
-    static auto
-        test(int) -> decltype(std::declval<ext::jsonization<U>>().check_json_object(std::declval<object>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().check_json_object(std::declval<object>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -309,7 +313,7 @@ class has_from_json_object_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().from_json_object(std::declval<object>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().from_json_object(std::declval<object>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -322,7 +326,8 @@ template <typename T>
 class has_move_to_json_object_in_templ_spec
 {
     template <typename U>
-    static auto test(int) -> decltype(std::declval<ext::jsonization<U>>().move_to_json_object(std::declval<U>()), std::true_type());
+    static auto test(int)
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_to_json_object(std::declval<U>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
@@ -336,7 +341,7 @@ class has_move_from_json_object_in_templ_spec
 {
     template <typename U>
     static auto test(int)
-        -> decltype(std::declval<ext::jsonization<U>>().move_from_json_object(std::declval<object>(), std::declval<U&>()), std::true_type());
+        -> decltype(std::declval<ext::jsonization<std::decay_t<U>>>().move_from_json_object(std::declval<object>(), std::declval<std::decay_t<U>&>()), std::true_type());
 
     template <typename U>
     static std::false_type test(...);
