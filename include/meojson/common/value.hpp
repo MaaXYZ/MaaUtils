@@ -113,21 +113,21 @@ public:
 
     ~value();
 
-    bool valid() const noexcept { return _type != value_type::invalid; }
+    bool valid() const noexcept;
 
-    bool empty() const noexcept { return is_null(); }
+    bool empty() const noexcept;
 
-    bool is_null() const noexcept { return _type == value_type::null; }
+    bool is_null() const noexcept;
 
-    bool is_number() const noexcept { return _type == value_type::number; }
+    bool is_number() const noexcept;
 
-    bool is_boolean() const noexcept { return _type == value_type::boolean; }
+    bool is_boolean() const noexcept;
 
-    bool is_string() const noexcept { return _type == value_type::string; }
+    bool is_string() const noexcept;
 
-    bool is_array() const noexcept { return _type == value_type::array; }
+    bool is_array() const noexcept;
 
-    bool is_object() const noexcept { return _type == value_type::object; }
+    bool is_object() const noexcept;
 
     template <typename value_t>
     bool is() const noexcept;
@@ -138,11 +138,11 @@ public:
     bool contains(const std::string& key) const;
     bool contains(size_t pos) const;
 
-    bool exists(const std::string& key) const { return contains(key); }
+    bool exists(const std::string& key) const;
 
-    bool exists(size_t pos) const { return contains(pos); }
+    bool exists(size_t pos) const;
 
-    value_type type() const noexcept { return _type; }
+    value_type type() const noexcept;
 
     const value& at(size_t pos) const;
     const value& at(const std::string& key) const;
@@ -187,12 +187,12 @@ public:
 
     void clear() noexcept;
 
-    std::string dumps(std::optional<size_t> indent = std::nullopt) const { return indent ? format(*indent) : to_string(); }
+    std::string dumps(std::optional<size_t> indent = std::nullopt) const;
 
     // return raw string
     std::string to_string() const;
 
-    std::string format(size_t indent = 4) const { return format(indent, 0); }
+    std::string format(size_t indent = 4) const;
 
     value& operator=(const value& rhs);
     value& operator=(value&&) noexcept;
@@ -207,7 +207,7 @@ public:
 
     bool operator==(const value& rhs) const;
 
-    bool operator!=(const value& rhs) const { return !(*this == rhs); }
+    bool operator!=(const value& rhs) const;
 
     const value& operator[](size_t pos) const;
     value& operator[](size_t pos);
@@ -230,36 +230,46 @@ public:
     value& operator+=(const array& rhs);
     value& operator+=(array&& rhs);
 
-    explicit operator bool() const { return as_boolean(); }
+    explicit operator bool() const;
 
-    explicit operator int() const { return as_integer(); }
+    explicit operator int() const;
 
-    explicit operator unsigned() const { return as_unsigned(); }
+    explicit operator unsigned() const;
 
-    explicit operator long() const { return as_long(); }
+    explicit operator long() const;
 
-    explicit operator unsigned long() const { return as_unsigned_long(); }
+    explicit operator unsigned long() const;
 
-    explicit operator long long() const { return as_long_long(); }
+    explicit operator long long() const;
 
-    explicit operator unsigned long long() const { return as_unsigned_long_long(); }
+    explicit operator unsigned long long() const;
 
-    explicit operator float() const { return as_float(); }
+    explicit operator float() const;
 
-    explicit operator double() const { return as_double(); }
+    explicit operator double() const;
 
-    explicit operator long double() const { return as_long_double(); }
+    explicit operator long double() const;
 
-    explicit operator std::string() const { return as_string(); }
+    explicit operator std::string() const;
 
-    explicit operator array() const { return as_array(); }
+    explicit operator array() const;
 
-    explicit operator object() const { return as_object(); }
+    explicit operator object() const;
 
     template <typename enum_t, std::enable_if_t<std::is_enum_v<enum_t>, bool> = true>
     explicit operator enum_t() const
     {
         return static_cast<enum_t>(static_cast<std::underlying_type_t<enum_t>>(*this));
+    }
+
+    template <typename jsonization_t, std::enable_if_t<_utils::has_from_json_in_member<jsonization_t>::value, bool> = true>
+    explicit operator jsonization_t() const&
+    {
+        jsonization_t dst {};
+        if (!dst.from_json(*this)) {
+            throw exception("Wrong JSON");
+        }
+        return dst;
     }
 
     template <typename jsonization_t, std::enable_if_t<_utils::has_from_json_in_templ_spec<jsonization_t>::value, bool> = true>

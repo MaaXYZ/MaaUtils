@@ -95,21 +95,21 @@ public:
 
     ~array() noexcept = default;
 
-    bool empty() const noexcept { return _array_data.empty(); }
+    bool empty() const noexcept;
 
-    size_t size() const noexcept { return _array_data.size(); }
+    size_t size() const noexcept;
 
-    bool contains(size_t pos) const { return pos < _array_data.size(); }
+    bool contains(size_t pos) const;
 
-    bool exists(size_t pos) const { return contains(pos); }
+    bool exists(size_t pos) const;
 
     const value& at(size_t pos) const;
 
-    std::string dumps(std::optional<size_t> indent = std::nullopt) const { return indent ? format(*indent) : to_string(); }
+    std::string dumps(std::optional<size_t> indent = std::nullopt) const;
 
     std::string to_string() const;
 
-    std::string format(size_t indent = 4) const { return format(indent, 0); }
+    std::string format(size_t indent = 4) const;
 
     template <typename value_t>
     bool all() const;
@@ -182,7 +182,17 @@ public:
 
     bool operator==(const array& rhs) const;
 
-    bool operator!=(const array& rhs) const { return !(*this == rhs); }
+    bool operator!=(const array& rhs) const;
+
+    template <typename jsonization_t, std::enable_if_t<_utils::has_from_json_in_member<jsonization_t>::value, bool> = true>
+    explicit operator jsonization_t() const&
+    {
+        jsonization_t dst {};
+        if (!dst.from_json(*this)) {
+            throw exception("Wrong JSON");
+        }
+        return dst;
+    }
 
     template <
         typename jsonization_t,
