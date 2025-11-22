@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "../common/types.hpp"
-#include "extensions.hpp"
+#include "../common/extensions.hpp"
 
 namespace json::_jsonization_helper
 {

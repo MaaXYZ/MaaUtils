@@ -41,7 +41,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_cvref_t<jsonization_t>, array> && _utils::has_to_json_in_member<jsonization_t>::value
+            !std::is_same_v<std::decay_t<jsonization_t>, array> && _utils::has_to_json_in_member<jsonization_t>::value
                 && !_utils::has_to_json_array_in_templ_spec<jsonization_t>::value,
             bool> = true>
     array(const jsonization_t& val)
@@ -52,7 +52,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_cvref_t<jsonization_t>, array> && _utils::has_to_json_in_templ_spec<jsonization_t>::value
+            !std::is_same_v<std::decay_t<jsonization_t>, array> && _utils::has_to_json_in_templ_spec<jsonization_t>::value
                 && !_utils::has_to_json_array_in_templ_spec<jsonization_t>::value,
             bool> = true>
     array(const jsonization_t& val)
@@ -63,7 +63,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_cvref_t<jsonization_t>, array> && _utils::has_to_json_array_in_templ_spec<jsonization_t>::value,
+            !std::is_same_v<std::decay_t<jsonization_t>, array> && _utils::has_to_json_array_in_templ_spec<jsonization_t>::value,
             bool> = true>
     array(const jsonization_t& val)
         : array(ext::jsonization<jsonization_t>().to_json_array(val))
@@ -73,7 +73,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_cvref_t<jsonization_t>, array> && std::is_rvalue_reference_v<jsonization_t&&>
+            !std::is_same_v<std::decay_t<jsonization_t>, array> && std::is_rvalue_reference_v<jsonization_t&&>
                 && _utils::has_move_to_json_in_templ_spec<jsonization_t>::value
                 && !_utils::has_move_to_json_array_in_templ_spec<jsonization_t>::value,
             bool> = true>
@@ -85,7 +85,7 @@ public:
     template <
         typename jsonization_t,
         std::enable_if_t<
-            !std::is_same_v<std::remove_cvref_t<jsonization_t>, array> && std::is_rvalue_reference_v<jsonization_t&&>
+            !std::is_same_v<std::decay_t<jsonization_t>, array> && std::is_rvalue_reference_v<jsonization_t&&>
                 && _utils::has_move_to_json_array_in_templ_spec<jsonization_t>::value,
             bool> = true>
     array(jsonization_t&& val)

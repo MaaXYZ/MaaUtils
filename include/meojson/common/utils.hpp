@@ -34,9 +34,7 @@ namespace json::_utils
 template <typename T>
 using iterator_t = decltype(std::declval<T&>().begin());
 template <typename T>
-using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-template <typename T>
-using iter_value_t = typename std::iterator_traits<remove_cvref_t<T>>::value_type;
+using iter_value_t = typename std::iterator_traits<std::decay_t<T>>::value_type;
 template <typename R>
 using range_value_t = iter_value_t<iterator_t<R>>;
 
