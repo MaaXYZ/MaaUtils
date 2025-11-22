@@ -91,25 +91,11 @@ inline value::value(std::nullptr_t)
 {
 }
 
-inline value::value(array arr)
-    : _type(value_type::array)
-    , _raw_data(std::make_unique<array>(std::move(arr)))
-{
-}
-
-inline value::value(object obj)
-    : _type(value_type::object)
-    , _raw_data(std::make_unique<object>(std::move(obj)))
-{
-}
-
 inline value::value(std::initializer_list<typename object::value_type> init_list)
     : _type(value_type::object)
     , _raw_data(std::make_unique<object>(init_list))
 {
 }
-
-// for Pimpl
 
 inline value::~value() = default;
 

@@ -60,8 +60,6 @@ public:
     value(std::string str);
     value(std::nullptr_t);
 
-    value(array arr);
-    value(object obj);
     value(std::initializer_list<typename object::value_type> init_list);
 
     // Constructed from raw data
@@ -101,6 +99,24 @@ public:
             bool> = true>
     value(jsonization_t&& val)
         : value(ext::jsonization<jsonization_t>().move_to_json(std::move(val)))
+    {
+    }
+
+    template <
+        typename array_t,
+        std::enable_if_t<std::is_constructible_v<array, array_t> && !std::is_constructible_v<value, array_t>, bool> = true>
+    value(array_t&& val)
+        : _type(value_type::array)
+        , _raw_data(std::make_unique<array>(std::forward<array_t>(val)))
+    {
+    }
+
+    template <
+        typename object_t,
+        std::enable_if_t<std::is_constructible_v<object, object_t> && !std::is_constructible_v<value, object_t>, bool> = true>
+    value(object_t&& val)
+        : _type(value_type::object)
+        , _raw_data(std::make_unique<object>(std::forward<object_t>(val)))
     {
     }
 
@@ -198,7 +214,7 @@ public:
 
     // template <
     //     typename value_t,
-    //     std::enable_if_t<std::is_convertible_v<value_t, value>, bool> = true>
+    //     std::enable_if_t<std::is_constructible_v<value_t, value>, bool> = true>
     // value& operator=(value_t rhs)
     // {
     //     return *this = value(std::move(rhs));
