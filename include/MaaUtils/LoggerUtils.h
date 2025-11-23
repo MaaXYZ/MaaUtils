@@ -79,6 +79,11 @@ public:
         stream_ << std::move(buffer_).str() << std::endl;
     }
 
+    // 不知道 MSVC 为什么会报这个 warning
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4702)
+#endif
     template <typename T>
     LogStream& operator<<(T&& value)
     {
@@ -88,8 +93,12 @@ public:
         else {
             stream(std::forward<T>(value), sep_);
         }
+
         return *this;
     }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
     template <typename T>
     LogStream& operator,(T&& value)
