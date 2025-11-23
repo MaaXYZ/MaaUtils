@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #endif
 
+#include <meojson/json.hpp>
+
 #include "MaaUtils/Conf.h"
 #include "MaaUtils/Port.h"
 
@@ -59,12 +61,9 @@ struct ProcessInfo
     bool operator<(const ProcessInfo& rhs) const { return pid < rhs.pid; }
 
     bool operator==(const ProcessInfo& rhs) const { return pid == rhs.pid; }
-};
 
-inline std::ostream& operator<<(std::ostream& os, const ProcessInfo& info)
-{
-    return os << info.pid << " " << info.name;
-}
+    MEO_TOJSON(pid, name);
+};
 
 MAA_UTILS_API std::set<ProcessInfo> list_processes();
 MAA_UTILS_API std::optional<std::filesystem::path> get_process_path(os_pid pid);
