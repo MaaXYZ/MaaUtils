@@ -104,11 +104,22 @@ public:
     }
 };
 
+template <>
+class jsonization<cv::Mat>
+{
+public:
+    json::value to_json(const cv::Mat& mat) const { return json::array { mat.rows, mat.cols, mat.type() }; }
+
+    // bool check_json(const json::value&) const { return false; }
+
+    // bool from_json(const json::value&, cv::Mat&) const { return false; }
+};
+
 template <typename T>
 concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
 
 template <has_output_operator T>
-requires(!std::is_constructible_v<T, json::value>)
+requires(!std::is_constructible_v<T, json::value> && !std::is_constructible_v<T, json::array> && !std::is_constructible_v<T, json::object>)
 class jsonization<T>
 {
 public:
@@ -119,8 +130,8 @@ public:
         return oss.str();
     }
 
-    bool check_json(const json::value&) const { return false; }
+    // bool check_json(const json::value&) const { return false; }
 
-    bool from_json(const json::value&, T&) const { return false; }
+    // bool from_json(const json::value&, T&) const { return false; }
 };
 } // namespace json::ext

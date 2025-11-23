@@ -41,6 +41,9 @@ inline void array::clear() noexcept
 
 inline bool array::erase(size_t pos)
 {
+    if (pos >= size()) {
+        return false;
+    }
     return erase(_array_data.begin() + pos);
 }
 
@@ -266,14 +269,14 @@ inline const value& array::operator[](size_t pos) const
 inline array array::operator+(const array& rhs) const&
 {
     array temp = *this;
-    temp._array_data.insert(_array_data.end(), rhs.begin(), rhs.end());
+    temp._array_data.insert(temp._array_data.end(), rhs.begin(), rhs.end());
     return temp;
 }
 
 inline array array::operator+(array&& rhs) const&
 {
     array temp = *this;
-    temp._array_data.insert(_array_data.end(), std::make_move_iterator(rhs.begin()), std::make_move_iterator(rhs.end()));
+    temp._array_data.insert(temp._array_data.end(), std::make_move_iterator(rhs.begin()), std::make_move_iterator(rhs.end()));
     return temp;
 }
 
@@ -315,5 +318,106 @@ inline std::ostream& operator<<(std::ostream& out, const array& arr)
 {
     out << arr.format();
     return out;
+}
+
+template <typename T>
+inline T array::as() const&
+{
+    if constexpr (_utils::is_fixed_array<T>) {
+        constexpr size_t size = _utils::fixed_array_size<T>;
+        if (_array_data.size() != size) {
+            throw exception("Array size mismatch");
+        }
+        
+        T result;
+        for (size_t i = 0; i < size; i++) {
+            result.at(i) = _array_data[i].as<typename T::value_type>();
+        }
+        return result;
+    }
+    else if constexpr (_utils::is_collection<T>) {
+        T result;
+        for (const auto& val : _array_data) {
+            if constexpr (_utils::has_emplace_back<T>::value) {
+                result.emplace_back(val.as<typename T::value_type>());
+            }
+            else {
+                result.emplace(val.as<typename T::value_type>());
+            }
+        }
+        return result;
+    }
+    else if constexpr (_utils::is_tuple_like<T>) {
+        constexpr size_t tuple_size = std::tuple_size_v<T>;
+        if (_array_data.size() != tuple_size) {
+            throw exception("Array size mismatch for tuple conversion");
+        }
+        
+        T result;
+        as_tuple_helper(result, std::make_index_sequence<tuple_size>());
+        return result;
+    }
+    else {
+        static_assert(!sizeof(T), "Unsupported type for array::as()");
+    }
+}
+
+template <typename T>
+inline T array::as() &&
+{
+    if constexpr (_utils::is_fixed_array<T>) {
+        constexpr size_t size = _utils::fixed_array_size<T>;
+        if (_array_data.size() != size) {
+            throw exception("Array size mismatch");
+        }
+        
+        T result;
+        for (size_t i = 0; i < size; i++) {
+            result.at(i) = std::move(_array_data[i]).as<typename T::value_type>();
+        }
+        _array_data.clear();
+        return result;
+    }
+    else if constexpr (_utils::is_collection<T>) {
+        T result;
+        for (auto& val : _array_data) {
+            if constexpr (_utils::has_emplace_back<T>::value) {
+                result.emplace_back(std::move(val).as<typename T::value_type>());
+            }
+            else {
+                result.emplace(std::move(val).as<typename T::value_type>());
+            }
+        }
+        _array_data.clear();
+        return result;
+    }
+    else if constexpr (_utils::is_tuple_like<T>) {
+        constexpr size_t tuple_size = std::tuple_size_v<T>;
+        if (_array_data.size() != tuple_size) {
+            throw exception("Array size mismatch for tuple conversion");
+        }
+        
+        T result;
+        move_as_tuple_helper(result, std::make_index_sequence<tuple_size>());
+        _array_data.clear();
+        return result;
+    }
+    else {
+        static_assert(!sizeof(T), "Unsupported type for array::as()");
+    }
+}
+
+template <typename tuple_t, size_t... Is>
+inline void array::as_tuple_helper(tuple_t& result, std::index_sequence<Is...>) const
+{
+    using std::get;
+    ((get<Is>(result) = _array_data[Is].template as<std::tuple_element_t<Is, tuple_t>>()), ...);
+}
+
+template <typename tuple_t, size_t... Is>
+inline void array::move_as_tuple_helper(tuple_t& result, std::index_sequence<Is...>)
+{
+    using std::get;
+    ((get<Is>(result) = std::move(_array_data[Is]).template as<std::tuple_element_t<Is, tuple_t>>()), ...);
 }
 } // namespace json
