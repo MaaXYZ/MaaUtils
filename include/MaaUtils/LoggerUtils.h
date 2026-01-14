@@ -73,10 +73,8 @@ public:
     {
         std::unique_lock lock(mutex_);
 
-        // Check size before any output (temporary copy to check size)
-        const size_t content_size = buffer_.str().size();
-        constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
-        constexpr size_t kTruncatedSize = 1024; // 1KB
+        // Check size before any output without materializing the string
+        const size_t content_size = static_cast<size_t>(buffer_.tellp());
 
         // Output to stdout (skip if too large to avoid flooding console)
         if (stdout_) {
@@ -160,6 +158,10 @@ private:
     std::string_view level_str();
 
 private:
+    // Log size limits (can be tuned if needed)
+    static constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
+    static constexpr size_t kTruncatedSize = 1024; // 1KB
+
     std::mutex& mutex_;
     std::ofstream& stream_;
     const level lv_ = level::fatal;

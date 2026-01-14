@@ -162,8 +162,9 @@ void Logger::open(bool append)
     std::string str_log_path = log_path_.string();
     FILE* file_ptr = fopen(str_log_path.c_str(), append ? "a" : "w");
     if (!file_ptr) {
-        // Failed to open file, log to stderr and return
+        // Failed to open file, log to stderr and explicitly reset stream
         std::cerr << "Failed to open log file: " << str_log_path << std::endl;
+        ofs_ = std::ofstream(); // Reset to default-constructed (closed) state
         return;
     }
     SetHandleInformation((HANDLE)_get_osfhandle(_fileno(file_ptr)), HANDLE_FLAG_INHERIT, 0);
