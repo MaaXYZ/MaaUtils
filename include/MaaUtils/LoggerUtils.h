@@ -79,8 +79,11 @@ public:
         size_t content_size = 0;
         if (pos >= 0) {
             content_size = static_cast<size_t>(pos);
+        } else {
+            // Fallback: materialize string to get size if tellp() fails
+            content_size = buffer_.str().size();
+            std::cerr << "[WARNING: tellp() failed, using fallback size check]" << std::endl;
         }
-        // If tellp() failed, content_size remains 0 and won't trigger size limit
 
         // Output to stdout (skip if too large to avoid flooding console)
         if (stdout_) {
@@ -106,11 +109,13 @@ public:
             }
         }
 
-        // Write to file (check if stream is valid)
-        if (stream_.good()) {
-            stream_ << content << std::endl;
+        // Write to file (check if stream is valid and open)
+        if (!stream_.is_open()) {
+            std::cerr << "[ERROR: Log stream is not open, log entry lost]" << std::endl;
+        } else if (!stream_.good()) {
+            std::cerr << "[ERROR: Log stream is in error state, log entry lost]" << std::endl;
         } else {
-            std::cerr << "[ERROR: Log stream is not valid, log entry lost]" << std::endl;
+            stream_ << content << std::endl;
         }
     }
 
@@ -164,9 +169,10 @@ private:
     std::string_view level_str();
 
 private:
-    // Log size limits (can be tuned if needed)
-    static constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
-    static constexpr size_t kTruncatedSize = 1024; // 1KB
+    // Log size limits (currently hardcoded, consider making configurable in the future
+    // to allow different environments to adjust limits without recompilation)
+    static constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB - triggers truncation
+    static constexpr size_t kTruncatedSize = 1024; // 1KB - size after truncation
 
     std::mutex& mutex_;
     std::ofstream& stream_;
