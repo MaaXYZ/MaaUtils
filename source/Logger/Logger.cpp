@@ -12,7 +12,7 @@
 #endif
 
 #include <cerrno>
-#include <cstring>
+#include <system_error>
 
 #include "MaaUtils/Encoding.h"
 #include "MaaUtils/ImageIo.h"
@@ -167,7 +167,7 @@ void Logger::open(bool append)
     if (!file_ptr) {
         // Failed to open file, log to stderr and explicitly reset stream
         std::cerr << "Failed to open log file: " << str_log_path
-                  << " (errno: " << errno << ", " << std::strerror(errno) << ")" << std::endl;
+                  << " (errno: " << errno << ", " << std::system_category().message(errno) << ")" << std::endl;
         ofs_ = std::ofstream(); // Reset to default-constructed (closed) state
         return;
     }
