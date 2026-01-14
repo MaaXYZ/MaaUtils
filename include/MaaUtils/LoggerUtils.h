@@ -76,12 +76,15 @@ public:
         // Check size before any output without materializing the string
         // Guard against tellp() failure (returns -1 on error)
         auto pos = buffer_.tellp();
+        std::optional<std::string> cached_content;  // Cache string if tellp() fails
         size_t content_size = 0;
+
         if (pos >= 0) {
             content_size = static_cast<size_t>(pos);
         } else {
-            // Fallback: materialize string to get size if tellp() fails
-            content_size = buffer_.str().size();
+            // Fallback: materialize string once and cache it to avoid double allocation
+            cached_content = buffer_.str();
+            content_size = cached_content->size();
             std::cerr << "[WARNING: tellp() failed, using fallback size check]" << std::endl;
         }
 
@@ -95,8 +98,8 @@ public:
             }
         }
 
-        // Get content and apply size limit for file
-        auto content = buffer_.str();
+        // Get content (reuse cached if available, otherwise materialize now)
+        auto content = cached_content.has_value() ? std::move(*cached_content) : buffer_.str();
 
         if (content.size() > kMaxLogSize) {
             try {
@@ -173,6 +176,7 @@ private:
     // to allow different environments to adjust limits without recompilation)
     static constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB - triggers truncation
     static constexpr size_t kTruncatedSize = 1024; // 1KB - size after truncation
+    static_assert(kTruncatedSize <= kMaxLogSize, "kTruncatedSize must be <= kMaxLogSize");
 
     std::mutex& mutex_;
     std::ofstream& stream_;

@@ -11,6 +11,9 @@
 #include <sys/utsname.h>
 #endif
 
+#include <cerrno>
+#include <cstring>
+
 #include "MaaUtils/Encoding.h"
 #include "MaaUtils/ImageIo.h"
 #include "MaaUtils/Platform.h"
@@ -163,7 +166,8 @@ void Logger::open(bool append)
     FILE* file_ptr = fopen(str_log_path.c_str(), append ? "a" : "w");
     if (!file_ptr) {
         // Failed to open file, log to stderr and explicitly reset stream
-        std::cerr << "Failed to open log file: " << str_log_path << std::endl;
+        std::cerr << "Failed to open log file: " << str_log_path
+                  << " (errno: " << errno << ", " << std::strerror(errno) << ")" << std::endl;
         ofs_ = std::ofstream(); // Reset to default-constructed (closed) state
         return;
     }
