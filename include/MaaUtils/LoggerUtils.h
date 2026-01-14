@@ -74,7 +74,13 @@ public:
         std::unique_lock lock(mutex_);
 
         // Check size before any output without materializing the string
-        const size_t content_size = static_cast<size_t>(buffer_.tellp());
+        // Guard against tellp() failure (returns -1 on error)
+        auto pos = buffer_.tellp();
+        size_t content_size = 0;
+        if (pos >= 0) {
+            content_size = static_cast<size_t>(pos);
+        }
+        // If tellp() failed, content_size remains 0 and won't trigger size limit
 
         // Output to stdout (skip if too large to avoid flooding console)
         if (stdout_) {
@@ -87,7 +93,7 @@ public:
         }
 
         // Get content and apply size limit for file
-        auto content = std::move(buffer_).str();
+        auto content = buffer_.str();
 
         if (content.size() > kMaxLogSize) {
             try {
