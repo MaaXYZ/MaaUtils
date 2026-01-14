@@ -73,24 +73,41 @@ public:
     {
         std::unique_lock lock(mutex_);
 
-        // Output to stdout first (while buffer_ is still valid)
-        if (stdout_) {
-            std::cout << stdout_string() << std::endl;
-        }
-
-        // Now get content and apply size limit
-        auto content = std::move(buffer_).str();
-
-        // Prevent writing excessive data (likely a bug if > 1MB)
+        // Check size before any output (temporary copy to check size)
+        const size_t content_size = buffer_.str().size();
         constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
         constexpr size_t kTruncatedSize = 1024; // 1KB
-        if (content.size() > kMaxLogSize) {
-            content = content.substr(0, kTruncatedSize) +
-                      std::format(" ... [TRUNCATED: {} bytes total, likely a bug - check for large objects passed to logger]",
-                                  content.size());
+
+        // Output to stdout (skip if too large to avoid flooding console)
+        if (stdout_) {
+            if (content_size > kMaxLogSize) {
+                std::cerr << "[WARNING: Log entry too large (" << content_size
+                         << " bytes), skipping stdout output]" << std::endl;
+            } else {
+                std::cout << stdout_string() << std::endl;
+            }
         }
 
-        stream_ << content << std::endl;
+        // Get content and apply size limit for file
+        auto content = std::move(buffer_).str();
+
+        if (content.size() > kMaxLogSize) {
+            try {
+                content = content.substr(0, kTruncatedSize) +
+                          std::format(" ... [TRUNCATED: {} bytes total, likely a bug - check for large objects passed to logger]",
+                                      content.size());
+            } catch (const std::exception&) {
+                // Fallback if std::format fails (shouldn't happen with valid format string)
+                content = content.substr(0, kTruncatedSize) + " ... [TRUNCATED: oversized log entry]";
+            }
+        }
+
+        // Write to file (check if stream is valid)
+        if (stream_.good()) {
+            stream_ << content << std::endl;
+        } else {
+            std::cerr << "[ERROR: Log stream is not valid, log entry lost]" << std::endl;
+        }
     }
 
     template <typename T>
