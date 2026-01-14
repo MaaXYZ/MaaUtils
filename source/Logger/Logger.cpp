@@ -136,6 +136,11 @@ bool Logger::rotate()
     const std::filesystem::path bak_path = log_dir_ / kLogbakFilename;
     std::filesystem::copy(log_path_, bak_path, std::filesystem::copy_options::overwrite_existing, ec);
 
+    if (ec) {
+        internal_dbg() << "Failed to copy log file" << VAR(log_path_) << VAR(bak_path) << VAR(ec.message());
+        return false;
+    }
+
     return true;
 }
 
@@ -156,6 +161,11 @@ void Logger::open(bool append)
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
     std::string str_log_path = log_path_.string();
     FILE* file_ptr = fopen(str_log_path.c_str(), append ? "a" : "w");
+    if (!file_ptr) {
+        // Failed to open file, log to stderr and return
+        std::cerr << "Failed to open log file: " << str_log_path << std::endl;
+        return;
+    }
     SetHandleInformation((HANDLE)_get_osfhandle(_fileno(file_ptr)), HANDLE_FLAG_INHERIT, 0);
     ofs_ = std::ofstream(file_ptr);
 

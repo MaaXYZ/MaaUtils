@@ -73,10 +73,20 @@ public:
     {
         std::unique_lock lock(mutex_);
 
+        auto content = std::move(buffer_).str();
+
+        // Prevent writing excessive data (likely a bug if > 1MB)
+        constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
+        if (content.size() > kMaxLogSize) {
+            content = content.substr(0, 1024) +
+                      std::format(" ... [TRUNCATED: {} bytes total, likely a bug - check for large objects passed to logger]",
+                                  content.size());
+        }
+
         if (stdout_) {
             std::cout << stdout_string() << std::endl;
         }
-        stream_ << std::move(buffer_).str() << std::endl;
+        stream_ << content << std::endl;
     }
 
     template <typename T>
