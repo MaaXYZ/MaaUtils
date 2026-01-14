@@ -73,19 +73,23 @@ public:
     {
         std::unique_lock lock(mutex_);
 
+        // Output to stdout first (while buffer_ is still valid)
+        if (stdout_) {
+            std::cout << stdout_string() << std::endl;
+        }
+
+        // Now get content and apply size limit
         auto content = std::move(buffer_).str();
 
         // Prevent writing excessive data (likely a bug if > 1MB)
         constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB
+        constexpr size_t kTruncatedSize = 1024; // 1KB
         if (content.size() > kMaxLogSize) {
-            content = content.substr(0, 1024) +
+            content = content.substr(0, kTruncatedSize) +
                       std::format(" ... [TRUNCATED: {} bytes total, likely a bug - check for large objects passed to logger]",
                                   content.size());
         }
 
-        if (stdout_) {
-            std::cout << stdout_string() << std::endl;
-        }
         stream_ << content << std::endl;
     }
 
