@@ -57,11 +57,16 @@ class MAA_UTILS_API LogStream
 {
 public:
     template <typename... args_t>
-    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out, args_t&&... args)
+    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out,
+              size_t max_log_size = kDefaultMaxLogSize,
+              size_t truncated_size = kDefaultTruncatedSize,
+              args_t&&... args)
         : mutex_(m)
         , stream_(s)
         , lv_(lv)
         , stdout_(std_out)
+        , max_log_size_(max_log_size)
+        , truncated_size_(truncated_size)
     {
         stream_props(std::forward<args_t>(args)...);
     }
@@ -73,43 +78,25 @@ public:
     {
         std::unique_lock lock(mutex_);
 
-        // Check size before any output without materializing the string
-        // Guard against tellp() failure (returns -1 on error)
-        auto pos = buffer_.tellp();
-        std::optional<std::string> cached_content;  // Cache string if tellp() fails
-        size_t content_size = 0;
-
-        if (pos >= 0) {
-            content_size = static_cast<size_t>(pos);
-        } else {
-            // Fallback: materialize string once and cache it to avoid double allocation
-            cached_content = buffer_.str();
-            content_size = cached_content->size();
-            std::cerr << "[WARNING: tellp() failed, using fallback size check]" << std::endl;
-        }
+        // Materialize buffer content once and reuse for all outputs
+        auto content = buffer_.str();
 
         // Output to stdout (skip if too large to avoid flooding console)
         if (stdout_) {
-            if (content_size > kMaxLogSize) {
-                std::cerr << "[WARNING: Log entry too large (" << content_size
+            if (content.size() > max_log_size_) {
+                std::cerr << "[WARNING: Log entry too large (" << content.size()
                          << " bytes), skipping stdout output]" << std::endl;
             } else {
-                std::cout << stdout_string() << std::endl;
+                std::cout << stdout_string(content) << std::endl;
             }
         }
 
-        // Get content (reuse cached if available, otherwise materialize now)
-        auto content = cached_content.has_value() ? std::move(*cached_content) : buffer_.str();
-
-        if (content.size() > kMaxLogSize) {
-            try {
-                content = content.substr(0, kTruncatedSize) +
-                          std::format(" ... [TRUNCATED: {} bytes total, likely a bug - check for large objects passed to logger]",
-                                      content.size());
-            } catch (const std::exception&) {
-                // Fallback if std::format fails (shouldn't happen with valid format string)
-                content = content.substr(0, kTruncatedSize) + " ... [TRUNCATED: oversized log entry]";
-            }
+        // Truncate if content exceeds size limit
+        if (content.size() > max_log_size_) {
+            const size_t original_size = content.size();
+            content = content.substr(0, truncated_size_) +
+                      " ... [TRUNCATED: " + std::to_string(original_size) +
+                      " bytes total, likely a bug - check for large objects passed to logger]";
         }
 
         // Write to file (check if stream is valid and open)
@@ -120,6 +107,10 @@ public:
         } else {
             stream_ << content << std::endl;
         }
+
+        // Clear buffer to prevent content accumulation
+        buffer_.str("");
+        buffer_.clear();
     }
 
     template <typename T>
@@ -168,20 +159,21 @@ private:
         stream(props, sep_);
     }
 
-    std::string stdout_string();
+    std::string stdout_string(const std::string& content);
     std::string_view level_str();
 
 private:
-    // Log size limits (currently hardcoded, consider making configurable in the future
-    // to allow different environments to adjust limits without recompilation)
-    static constexpr size_t kMaxLogSize = 1024 * 1024; // 1MB - triggers truncation
-    static constexpr size_t kTruncatedSize = 1024; // 1KB - size after truncation
-    static_assert(kTruncatedSize <= kMaxLogSize, "kTruncatedSize must be <= kMaxLogSize");
+    // Default log size limits (can be overridden via constructor parameters)
+    static constexpr size_t kDefaultMaxLogSize = 1024 * 1024; // 1MB - triggers truncation
+    static constexpr size_t kDefaultTruncatedSize = 1024; // 1KB - size after truncation
+    static_assert(kDefaultTruncatedSize <= kDefaultMaxLogSize, "kDefaultTruncatedSize must be <= kDefaultMaxLogSize");
 
     std::mutex& mutex_;
     std::ofstream& stream_;
     const level lv_ = level::fatal;
     const bool stdout_ = false;
+    const size_t max_log_size_;
+    const size_t truncated_size_;
 
     separator sep_ = separator::space;
     std::stringstream buffer_;

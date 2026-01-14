@@ -31,7 +31,7 @@ constexpr separator separator::comma(",");
 
 static constexpr std::string_view kSplitLine = "-----------------------------";
 
-std::string LogStream::stdout_string()
+std::string LogStream::stdout_string(const std::string& content)
 {
     std::string color;
 
@@ -53,7 +53,7 @@ std::string LogStream::stdout_string()
         break;
     }
 
-    return color + utf8_to_crt(buffer_.str()) + "\033[0m";
+    return color + utf8_to_crt(content) + "\033[0m";
 }
 
 std::string_view LogStream::level_str()
