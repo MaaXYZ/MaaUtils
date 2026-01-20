@@ -29,18 +29,24 @@ inline cv::Mat imread(const std::string& utf8_path, int flags = cv::IMREAD_COLOR
 inline bool imwrite(const std::filesystem::path& path, cv::InputArray img, const std::vector<int>& params = std::vector<int>())
 {
     if (path.has_parent_path()) {
-        std::filesystem::create_directories(path.parent_path());
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        if (ec) {
+            return false;
+        }
     }
-
     auto ext = path_to_utf8_string(path.extension());
     std::vector<uint8_t> encoded;
     if (!cv::imencode(ext, img, encoded, params)) {
         return false;
     }
-
     std::ofstream of(path, std::ios::out | std::ios::binary);
+    if (!of.is_open()) {
+        return false;
+    }
     of.write(reinterpret_cast<char*>(encoded.data()), encoded.size());
-    return true;
+    of.close();
+    return !of.fail();
 }
 
 inline bool imwrite(const std::string& utf8_path, cv::InputArray img, const std::vector<int>& params = std::vector<int>())
