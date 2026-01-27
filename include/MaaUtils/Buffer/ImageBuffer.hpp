@@ -3,11 +3,7 @@
 #include "BufferTypes.hpp"
 #include "ListBuffer.hpp"
 #include "MaaUtils/Conf.h"
-
-MAA_SUPPRESS_CV_WARNINGS_BEGIN
-#include <opencv2/core/mat.hpp>
-#include <opencv2/imgcodecs.hpp>
-MAA_SUPPRESS_CV_WARNINGS_END
+#include "MaaUtils/NoWarningCV.hpp"
 
 MAA_NS_BEGIN
 
@@ -64,6 +60,31 @@ public:
     }
 
     virtual void set(ImageEncodedBuffer buffer) override { from_encoded(std::move(buffer)); }
+
+    virtual bool resize(int32_t width, int32_t height) override
+    {
+        if (empty()) {
+            return false;
+        }
+
+        if (!width && !height) {
+            return false;
+        }
+
+        if (!width) {
+            double scale = static_cast<double>(height) / this->height();
+            width = static_cast<int32_t>(std::round(this->width() * scale));
+        }
+        if (!height) {
+            double scale = static_cast<double>(width) / this->width();
+            height = static_cast<int32_t>(std::round(this->height() * scale));
+        }
+
+        dirty_ = true;
+        cv::resize(image_, image_, { width, height }, 0, 0, cv::INTER_AREA);
+
+        return true;
+    }
 
 private:
     void from_encoded(ImageEncodedBuffer buffer)
