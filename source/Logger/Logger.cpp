@@ -2,6 +2,8 @@
 
 #include "MaaUtils/Logger.h"
 
+#include <thread>
+
 #ifdef _WIN32
 #include "MaaUtils/SafeWindows.hpp"
 
@@ -115,17 +117,13 @@ void Logger::reinit()
     log_proc_info();
 }
 
-void Logger::cleanup()
+static void remove_old_files(const std::filesystem::path& dir)
 {
-    if (log_dir_.empty() || !std::filesystem::exists(log_dir_)) {
-        return;
-    }
-
     constexpr auto kMaxAge = std::chrono::hours(24 * 7); // 一周
     const auto now = std::filesystem::file_time_type::clock::now();
 
     std::error_code ec;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(log_dir_, ec)) {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(dir, ec)) {
         if (ec) {
             break;
         }
@@ -143,6 +141,15 @@ void Logger::cleanup()
             std::filesystem::remove(entry.path(), ec);
         }
     }
+}
+
+void Logger::cleanup()
+{
+    if (log_dir_.empty() || !std::filesystem::exists(log_dir_)) {
+        return;
+    }
+
+    std::thread(remove_old_files, log_dir_).detach();
 }
 
 bool Logger::rotate()
