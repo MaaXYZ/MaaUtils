@@ -75,6 +75,7 @@ private:
     Logger() = default;
 
     void reinit();
+    void cleanup();
     bool rotate();
     void open(bool append = true);
     void close();

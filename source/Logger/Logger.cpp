@@ -109,9 +109,40 @@ void Logger::flush()
 
 void Logger::reinit()
 {
+    cleanup();
     bool rotated = rotate();
     open(!rotated);
     log_proc_info();
+}
+
+void Logger::cleanup()
+{
+    if (log_dir_.empty() || !std::filesystem::exists(log_dir_)) {
+        return;
+    }
+
+    constexpr auto kMaxAge = std::chrono::hours(24 * 7); // 一周
+    const auto now = std::filesystem::file_time_type::clock::now();
+
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(log_dir_, ec)) {
+        if (ec) {
+            break;
+        }
+        if (!entry.is_regular_file(ec) || ec) {
+            continue;
+        }
+
+        auto last_write = entry.last_write_time(ec);
+        if (ec) {
+            continue;
+        }
+
+        auto age = now - last_write;
+        if (age > kMaxAge) {
+            std::filesystem::remove(entry.path(), ec);
+        }
+    }
 }
 
 bool Logger::rotate()
