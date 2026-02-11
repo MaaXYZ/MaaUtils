@@ -131,6 +131,11 @@ static void remove_old_files(const std::filesystem::path& dir)
             continue;
         }
 
+        const auto ext = path_to_utf8_string(entry.path().extension());
+        if (ext != ".log" && ext != ".jpg" && ext != ".png") {
+            continue;
+        }
+
         auto last_write = entry.last_write_time(ec);
         if (ec) {
             continue;
