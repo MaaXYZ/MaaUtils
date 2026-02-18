@@ -11,7 +11,7 @@ ServerSockIOFactory::ServerSockIOFactory(const std::string& address, unsigned sh
 
     using namespace boost::asio::ip;
 
-    tcp::endpoint endpoint(address::from_string(address), port);
+    tcp::endpoint endpoint(make_address(address), port);
 
     server_acceptor_.open(endpoint.protocol());
     server_acceptor_.set_option(tcp::acceptor::reuse_address(true));
@@ -37,7 +37,7 @@ std::shared_ptr<SockIOStream> ServerSockIOFactory::accept()
     // LogFunc;
 
     boost::asio::ip::tcp::iostream ios;
-    auto accept_future = std::async(std::launch::async, [&]() { server_acceptor_.accept(*ios.rdbuf()); });
+    auto accept_future = std::async(std::launch::async, [&]() { server_acceptor_.accept(ios.rdbuf()->socket()); });
     if (accept_future.wait_for(std::chrono::seconds(2)) != std::future_status::ready) {
         LogError << "accept timeout";
         server_acceptor_.cancel();
@@ -53,7 +53,7 @@ std::shared_ptr<SockIOStream> ServerSockIOFactory::accept()
 }
 
 ClientSockIOFactory::ClientSockIOFactory(const std::string& address, unsigned short port)
-    : endpoint_(boost::asio::ip::address::from_string(address), port)
+    : endpoint_(boost::asio::ip::make_address(address), port)
 {
     LogFunc << VAR(address) << VAR(port);
 }
