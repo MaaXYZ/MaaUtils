@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-import os
-import sys
-import urllib.request
-import urllib.error
+import hashlib
 import json
-import time
-from pathlib import Path
+import os
 import shutil
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
 
 basedir = Path(__file__).parent.parent
 maadeps_dir = Path(basedir, "MaaDeps")
@@ -82,8 +83,8 @@ def sanitize_filename(filename: str):
 
 
 def retry_urlopen(*args, **kwargs):
-    import time
     import http.client
+    import time
 
     for _ in range(5):
         try:
@@ -107,7 +108,7 @@ def retry_urlopen(*args, **kwargs):
             raise
 
 
-def main(target_triplet: str, repo: str, version: str):
+def main(target_triplet: str, repo: str, version: str, cache_asset: bool = False):
     print("about to download prebuilt dependency libraries for", target_triplet)
     # if len(sys.argv) == 1:
     #     print(f"to specify another triplet, run `{sys.argv[0]} <target triplet>`")
@@ -145,11 +146,64 @@ def main(target_triplet: str, repo: str, version: str):
         print("    " + runtime_asset["name"])
         download_dir.mkdir(parents=True, exist_ok=True)
         for asset in [devel_asset, runtime_asset]:
+            if cache_asset and check_asset_cache(asset, maadeps_dir):
+                print("using cached asset", asset["name"])
+                continue
             url = asset["browser_download_url"]
             print("downloading from", url)
             local_file = download_dir / sanitize_filename(asset["name"])
-            urllib.request.urlretrieve(url, local_file, reporthook=ProgressHook())
+            if check_local_digest(local_file, asset["digest"]):
+                print("reusing matched digest", asset["digest"])
+            else:
+                urllib.request.urlretrieve(url, local_file, reporthook=ProgressHook())
             print("extracting", asset["name"])
             shutil.unpack_archive(local_file, maadeps_dir)
+            if cache_asset:
+                set_asset_cache(asset, maadeps_dir)
     else:
         raise Exception(f"no binary release found for {target_triplet}")
+
+
+def check_local_digest(file: Path, digest: str):
+    if not file.exists():
+        return False
+    if not digest.startswith("sha256:"):
+        print("unsupported digest format:", digest)
+        return False
+    hasher = hashlib.sha256()
+    with file.open("rb") as f:
+        while True:
+            chunk = f.read(8192)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    local_digest = hasher.hexdigest()
+    return local_digest == digest[len("sha256:") :]
+
+
+def check_asset_cache(asset, extract_dir: Path):
+    name = asset["name"]
+    digest = asset["digest"]
+    asset_cache_file = extract_dir / ".cache_digest.json"
+    if not asset_cache_file.exists():
+        return False
+    try:
+        with open(asset_cache_file, "r") as f:
+            asset_caches = json.load(f)
+            return asset_caches.get(name) == digest
+    except (json.JSONDecodeError, AttributeError, KeyError):
+        return False
+
+
+def set_asset_cache(asset, extract_dir: Path):
+    name = asset["name"]
+    digest = asset["digest"]
+    asset_cache_file = extract_dir / ".cache_digest.json"
+    try:
+        with open(asset_cache_file, "r") as f:
+            asset_caches = json.load(f)
+            asset_caches[name] = digest
+    except (FileNotFoundError, json.JSONDecodeError, TypeError):
+        asset_caches = {name: digest}
+    with open(asset_cache_file, "w") as f:
+        json.dump(asset_caches, f)
