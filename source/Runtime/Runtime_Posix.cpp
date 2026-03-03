@@ -5,8 +5,10 @@
 
 #ifdef __APPLE__
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <string>
+#include <system_error>
 #include <unordered_set>
 #endif
 
@@ -40,16 +42,25 @@ static void ensure_macos_path()
         if (dir.empty() || existing_dirs.count(dir)) {
             return;
         }
-        if (!std::filesystem::is_directory(dir)) {
+        std::error_code ec;
+        if (!std::filesystem::is_directory(dir, ec) || ec) {
             return;
         }
         existing_dirs.insert(dir);
-        path_env += ':';
-        path_env += dir;
+        if (path_env.empty()) {
+            path_env = dir;
+        }
+        else {
+            path_env += ':';
+            path_env += dir;
+        }
     };
 
-    // read /etc/paths
-    if (std::ifstream ifs("/etc/paths"); ifs.is_open()) {
+    auto read_paths_from = [&](const std::filesystem::path& file) {
+        std::ifstream ifs(file);
+        if (!ifs.is_open()) {
+            return;
+        }
         std::string line;
         while (std::getline(ifs, line)) {
             if (!line.empty() && line.back() == '\r') {
@@ -57,23 +68,23 @@ static void ensure_macos_path()
             }
             append(line);
         }
-    }
+    };
+
+    // read /etc/paths
+    read_paths_from("/etc/paths");
 
     // read /etc/paths.d/*
     {
         std::error_code ec;
-        for (const auto& entry : std::filesystem::directory_iterator("/etc/paths.d", ec)) {
-            if (!entry.is_regular_file()) {
+        std::filesystem::directory_iterator it("/etc/paths.d", ec);
+        std::filesystem::directory_iterator end;
+        for (; it != end; it.increment(ec)) {
+            if (ec) {
+                ec.clear();
                 continue;
             }
-            if (std::ifstream ifs(entry.path()); ifs.is_open()) {
-                std::string line;
-                while (std::getline(ifs, line)) {
-                    if (!line.empty() && line.back() == '\r') {
-                        line.pop_back();
-                    }
-                    append(line);
-                }
+            if (it->is_regular_file(ec) && !ec) {
+                read_paths_from(it->path());
             }
         }
     }
