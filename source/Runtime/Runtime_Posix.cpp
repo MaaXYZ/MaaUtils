@@ -23,22 +23,38 @@ static void ensure_macos_path()
     if (const char* existing = getenv("PATH")) {
         path_env = existing;
     }
+    const auto original_path_env = path_env;
+
+    auto normalize = [](std::string s) -> std::string {
+        while (s.size() > 1 && s.back() == '/') {
+            s.pop_back();
+        }
+        return s;
+    };
 
     std::unordered_set<std::string> existing_dirs;
     {
         std::string::size_type start = 0;
         while (start < path_env.size()) {
             auto pos = path_env.find(':', start);
+            std::string seg;
             if (pos == std::string::npos) {
-                existing_dirs.insert(path_env.substr(start));
+                seg = normalize(path_env.substr(start));
+                if (!seg.empty()) {
+                    existing_dirs.insert(std::move(seg));
+                }
                 break;
             }
-            existing_dirs.insert(path_env.substr(start, pos - start));
+            seg = normalize(path_env.substr(start, pos - start));
+            if (!seg.empty()) {
+                existing_dirs.insert(std::move(seg));
+            }
             start = pos + 1;
         }
     }
 
-    auto append = [&](const std::string& dir) {
+    auto append = [&](const std::string& raw) {
+        auto dir = normalize(raw);
         if (dir.empty() || existing_dirs.count(dir)) {
             return;
         }
@@ -95,7 +111,9 @@ static void ensure_macos_path()
     append("/usr/local/bin");
     append("/usr/local/sbin");
 
-    setenv("PATH", path_env.c_str(), 1);
+    if (path_env != original_path_env) {
+        setenv("PATH", path_env.c_str(), 1);
+    }
 }
 
 #endif // __APPLE__
