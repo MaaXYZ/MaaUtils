@@ -23,9 +23,9 @@ if(MSVC)
     add_compile_definitions("_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
 
     set(release_link_options "/OPT:REF;/OPT:ICF")
-    add_link_options("$<$<CONFIG:Release>:${release_link_options}>")
-    SET(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RelWithDebInfo;Release;")
-    SET(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL "MinSizeRel;Release;")
+    add_link_options("$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:${release_link_options}>")
+    set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RelWithDebInfo;Release;")
+    set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL "MinSizeRel;Release;")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 else()
     add_compile_options("-Wall;-Werror;-Wextra;-Wpedantic;-Wno-missing-field-initializers")
@@ -33,15 +33,17 @@ else()
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13)
         add_compile_options("-Wno-restrict")
     endif()
+    add_compile_options("$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin>")
+    add_link_options("$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin>")
 endif()
 
 if(LINUX AND WITH_RPATH_LIBRARY)
     function(copy_and_add_rpath_library LIBNAME)
         execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${LIBNAME}.so.1 -target ${CMAKE_CXX_COMPILER_TARGET} --sysroot=${CMAKE_SYSROOT}
+            COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${LIBNAME}.so.1 -target ${CMAKE_CXX_COMPILER_TARGET}
+                    --sysroot=${CMAKE_SYSROOT}
             OUTPUT_VARIABLE LIB_PATH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
 
         if("${LIB_PATH}" STREQUAL "${LIBNAME}.so.1")
             message(FATAL_ERROR "Could not locate ${LIBNAME}.so.1 using compiler")
@@ -63,11 +65,16 @@ if(LINUX AND WITH_RPATH_LIBRARY)
 
         message(STATUS "${LIBNAME}.so.1 path: ${LIB_PATH_REAL}")
 
-        install(FILES "${LIB_PATH_REAL}" DESTINATION ${RPATH_LIBRARY_INSTALL_DIR} RENAME "${LIBNAME}.so.1")
+        install(
+            FILES "${LIB_PATH_REAL}"
+            DESTINATION ${RPATH_LIBRARY_INSTALL_DIR}
+            RENAME "${LIBNAME}.so.1")
 
         get_filename_component(LIB_PATH_DIR "${LIB_PATH_REAL}" DIRECTORY)
         list(APPEND CMAKE_BUILD_RPATH "${LIB_PATH_DIR}")
-        set(CMAKE_BUILD_RPATH "${CMAKE_BUILD_RPATH}" PARENT_SCOPE)
+        set(CMAKE_BUILD_RPATH
+            "${CMAKE_BUILD_RPATH}"
+            PARENT_SCOPE)
     endfunction()
 
     copy_and_add_rpath_library(libc++)
