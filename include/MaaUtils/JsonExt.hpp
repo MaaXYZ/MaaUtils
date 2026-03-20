@@ -115,7 +115,11 @@ template <typename T>
 concept has_output_operator = requires { std::declval<std::ostringstream&>() << std::declval<T>(); };
 
 template <has_output_operator T>
-requires(!std::is_constructible_v<json::value, T> && !std::is_constructible_v<json::array, T> && !std::is_constructible_v<json::object, T>)
+requires(
+    !std::is_constructible_v<json::value, T> && !std::is_constructible_v<json::array, T>
+    && !std::is_constructible_v<json::object, T> && !json::_utils::is_collection<T> && !json::_utils::is_fixed_array<T>
+    && !json::_utils::is_tuple_like<T> && !json::_utils::is_map<T> && !json::_utils::is_nullable<T>
+    && !json::_utils::is_variant<T>)
 class jsonization<T>
 {
 public:
