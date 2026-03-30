@@ -191,7 +191,7 @@ std::optional<int> perfer_gpu()
             LogWarn << "software adapter, skip" << VAR(adapter_index) << VAR(adapter_desc);
             continue;
         }
-        if (desc.DedicatedVideoMemory < 2 * 1024 * 1024 * 1024) {
+        if (desc.DedicatedVideoMemory < 2LL * 1024 * 1024 * 1024) {
             LogWarn << "adapter has less than 2GB video memory, skip" << VAR(adapter_index) << VAR(adapter_desc)
                     << VAR(desc.DedicatedVideoMemory);
             continue;
