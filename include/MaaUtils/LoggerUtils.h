@@ -54,7 +54,7 @@ struct MAA_UTILS_API separator
 };
 
 template <typename T>
-concept has_output_operator = requires { std::declval<std::ostringstream&>() << std::declval<T>(); };
+concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
 
 class MAA_UTILS_API LogStream
 {
@@ -120,10 +120,10 @@ private:
             buffer_ << j.dumps() << sep.str;
         }
         else if constexpr (has_output_operator<T>) {
-            buffer_ << value << sep.str;
+            buffer_ << std::forward<T>(value) << sep.str;
         }
         else {
-            static_assert(false);
+            static_assert(false, "Unsupported type for LogStream::stream");
         }
     }
 
