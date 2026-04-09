@@ -53,6 +53,9 @@ struct MAA_UTILS_API separator
     std::string_view str;
 };
 
+template <typename T>
+concept has_output_operator = requires { std::declval<std::ostream&>() << std::declval<T>(); };
+
 class MAA_UTILS_API LogStream
 {
 public:
@@ -103,9 +106,25 @@ private:
     template <typename T>
     void stream(T&& value, const separator& sep)
     {
-        json::value j(std::forward<T>(value));
-        // 直接 dumps 的 string 会多一对双引号，有点难看
-        buffer_ << (j.is_string() ? j.as_string() : j.dumps()) << sep.str;
+        if constexpr (std::is_constructible_v<json::value, T>) {
+            json::value j(std::forward<T>(value));
+            // 直接 dumps 的 string 会多一对双引号，有点难看
+            buffer_ << (j.is_string() ? j.as_string() : j.dumps()) << sep.str;
+        }
+        else if constexpr (std::is_constructible_v<json::array, T>) {
+            json::array j(std::forward<T>(value));
+            buffer_ << j.dumps() << sep.str;
+        }
+        else if constexpr (std::is_constructible_v<json::object, T>) {
+            json::object j(std::forward<T>(value));
+            buffer_ << j.dumps() << sep.str;
+        }
+        else if constexpr (has_output_operator<T>) {
+            buffer_ << std::forward<T>(value) << sep.str;
+        }
+        else {
+            static_assert(false, "Unsupported type for LogStream::stream");
+        }
     }
 
     template <typename... args_t>
@@ -116,7 +135,7 @@ private:
 #else
         int pid = ::getpid();
 #endif
-        auto tid = static_cast<uint16_t>(std::hash<std::thread::id> {}(std::this_thread::get_id()));
+        auto tid = static_cast<uint16_t>(std::hash<std::thread::id> { }(std::this_thread::get_id()));
 
         std::string props = std::format("[{}][{}][Px{}][Tx{}]", format_now(), level_str(), pid, tid);
         for (auto&& arg : { args... }) {
