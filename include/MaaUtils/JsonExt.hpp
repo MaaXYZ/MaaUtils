@@ -111,19 +111,4 @@ public:
     json::value to_json(const cv::Mat& mat) const { return json::array { mat.rows, mat.cols, mat.type() }; }
 };
 
-template <typename T>
-concept has_output_operator = requires { std::declval<std::ostringstream&>() << std::declval<T>(); };
-
-template <has_output_operator T>
-requires(!std::is_constructible_v<json::value, T> && !std::is_constructible_v<json::array, T> && !std::is_constructible_v<json::object, T>)
-class jsonization<T>
-{
-public:
-    json::value to_json(const T& value) const
-    {
-        std::ostringstream oss;
-        oss << value;
-        return oss.str();
-    }
-};
 } // namespace json::ext
