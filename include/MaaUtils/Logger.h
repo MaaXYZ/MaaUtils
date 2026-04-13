@@ -9,7 +9,7 @@ class MAA_UTILS_API Logger
 {
 public:
     static constexpr std::string_view kLogFilename = "maa.log";
-    static constexpr std::string_view kLogbakFilename = "maa.bak.log";
+    static constexpr std::string_view kLogbakFilename = "maa.bak.{}.log";
 
 public:
     static Logger& get_instance();
