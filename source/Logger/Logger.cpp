@@ -176,7 +176,7 @@ bool Logger::rotate()
 
     std::error_code ec;
 
-    const std::filesystem::path bak_path = log_dir_ / kLogbakFilename;
+    const std::filesystem::path bak_path = log_dir_ / std::format(kLogbakFilename, format_now_for_filename());
     std::filesystem::copy(log_path_, bak_path, std::filesystem::copy_options::overwrite_existing, ec);
 
     return true;
