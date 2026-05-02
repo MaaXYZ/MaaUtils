@@ -1,7 +1,13 @@
 file(GLOB_RECURSE maa_utils_src *.h *.hpp *.cpp)
 file(GLOB_RECURSE maa_utils_header ${MAAUTILS_DIR}/include/MaaUtils/*)
 
-add_library(MaaUtils SHARED ${maa_utils_src} ${maa_utils_header})
+# Embed MAA_HASH_VERSION via configure_file so only this single TU recompiles when version changes.
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Version.cpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Version.cpp
+    @ONLY)
+
+add_library(MaaUtils SHARED ${maa_utils_src} ${maa_utils_header} ${CMAKE_CURRENT_BINARY_DIR}/Version.cpp)
 target_include_directories(MaaUtils PRIVATE ${MAAUTILS_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(MaaUtils PUBLIC Boost::regex PRIVATE Boost::system ${OpenCV_LIBS})
 

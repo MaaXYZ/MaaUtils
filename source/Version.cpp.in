@@ -1,0 +1,6 @@
+#include "MaaUtils/Version.h"
+
+const char* maa_version() noexcept
+{
+    return "@MAA_HASH_VERSION@";
+}

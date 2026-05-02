@@ -17,8 +17,7 @@
 #include "MaaUtils/ImageIo.h"
 #include "MaaUtils/Platform.h"
 #include "MaaUtils/Uuid.h"
-
-#pragma message("MaaUtils MAA_VERSION: " MAA_VERSION)
+#include "MaaUtils/Version.h"
 
 MAA_LOG_NS_BEGIN
 
@@ -252,7 +251,7 @@ void Logger::log_proc_info()
 {
     internal_dbg() << kSplitLine;
     internal_dbg() << "MAA Process Start";
-    internal_dbg() << "Version" << MAA_VERSION;
+    internal_dbg() << "Version" << maa_version();
     internal_dbg() << "Built at" << __DATE__ << __TIME__;
     internal_dbg() << sys_info();
     internal_dbg() << "Working" << std::filesystem::current_path();

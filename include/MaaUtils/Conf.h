@@ -61,10 +61,6 @@
 #define NOMINMAX
 #endif
 
-#ifndef MAA_VERSION
-#define MAA_VERSION "DEBUG_VERSION"
-#endif
-
 #define MAA_NS MaaNS
 #define MAA_NS_BEGIN \
     namespace MAA_NS \
