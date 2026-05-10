@@ -198,6 +198,9 @@ void Logger::open(bool append)
 
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
     FILE* file_ptr = _wfopen(log_path_.c_str(), append ? L"a" : L"w");
+    if (!file_ptr) {
+        return;
+    }
     SetHandleInformation((HANDLE)_get_osfhandle(_fileno(file_ptr)), HANDLE_FLAG_INHERIT, 0);
     ofs_ = std::ofstream(file_ptr);
 
