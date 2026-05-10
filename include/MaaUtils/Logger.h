@@ -11,6 +11,11 @@ public:
     static constexpr std::string_view kLogFilename = "maafw.log";
     static constexpr std::string_view kLogbakFilename = "maafw.bak.{}.log";
 
+    // perf trace 通道（独立文件，独立锁，无 Logger 默认前缀，纯 CSV 行）
+    static constexpr std::string_view kPerfTraceSubdir = "perf";
+    static constexpr std::string_view kPerfTraceFilenameFormat = "maafw_perf_trace_{}.csv";
+    static constexpr std::string_view kPerfTraceCsvHeader = "ts_us,tid,scope,name,extra,elapsed_us";
+
 public:
     static Logger& get_instance();
 
@@ -57,6 +62,11 @@ public:
         return stream(level::trace, std::forward<args_t>(args)...);
     }
 
+    // perf trace 通道入口。返回的 PerfLogStream 不带任何 Logger 默认前缀，
+    // 调用方负责把整行 CSV 文本拼好。析构时一次性原子追加一行到 perf 文件。
+    // perf 文件随 start_logging() 打开；若日志目录未设置，当前写入会静默丢弃。
+    PerfLogStream perf_stream();
+
     void start_logging(std::filesystem::path dir);
     void set_stdout_level(level lv);
     void flush();
@@ -82,6 +92,11 @@ private:
     void log_proc_info();
     void count_and_check_flush();
 
+    // perf 通道相关（实现见 Logger.cpp）
+    void perf_reset_locked();
+    void perf_try_open_locked();
+    void perf_close_locked();
+
     LogStream internal_dbg();
 
 private:
@@ -97,6 +112,12 @@ private:
     std::mutex trace_mutex_;
 
     size_t log_count_ = 0;
+
+    // perf 通道：与主日志完全分离
+    std::mutex perf_init_mutex_; // 保护 perf 初始化状态及 log_dir_ 切换
+    std::mutex perf_mutex_;      // 保护对 perf_ofs_ 的实际写入
+    std::ofstream perf_ofs_;
+    bool perf_initialized_ = false;
 };
 
 class LogScopeEnterHelper
@@ -163,6 +184,10 @@ MAA_LOG_NS_END
 #define LogInfo MAA_LOG_NS::Logger::get_instance().info(LOG_ARGS)
 #define LogDebug MAA_LOG_NS::Logger::get_instance().debug(LOG_ARGS)
 #define LogTrace MAA_LOG_NS::Logger::get_instance().trace(LOG_ARGS)
+
+// perf 通道入口。无任何前缀，调用方拼好整行 CSV 文本即可。
+// 此宏在所有构建中都存在，供 MaaFramework 的 perf trace 功能按需调用。
+#define LogPerf MAA_LOG_NS::Logger::get_instance().perf_stream()
 
 #define LogFunc                                                   \
     MAA_LOG_NS::LogScopeLeaveHelper ScopeHelperVarName(LOG_ARGS); \
