@@ -2,6 +2,8 @@
 
 #include "MaaUtils/Logger.h"
 
+#include <cerrno>
+#include <iostream>
 #include <thread>
 
 #ifdef _WIN32
@@ -197,8 +199,10 @@ void Logger::open(bool append)
 #ifdef _WIN32
 
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
-    std::string str_log_path = log_path_.string();
-    FILE* file_ptr = fopen(str_log_path.c_str(), append ? "a" : "w");
+    FILE* file_ptr = _wfopen(log_path_.c_str(), append ? L"a" : L"w");
+    if (!file_ptr) {
+        return;
+    }
     SetHandleInformation((HANDLE)_get_osfhandle(_fileno(file_ptr)), HANDLE_FLAG_INHERIT, 0);
     ofs_ = std::ofstream(file_ptr);
 
