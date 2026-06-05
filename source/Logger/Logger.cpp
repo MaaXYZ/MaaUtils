@@ -201,12 +201,6 @@ void Logger::open(bool append)
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
     FILE* file_ptr = _wfopen(log_path_.c_str(), append ? L"a" : L"w");
     if (!file_ptr) {
-        const int error_no = errno;
-        const wchar_t* werr = _wcserror(error_no);
-        std::cerr << "[MaaUtils][Logger] Failed to open log file: " << path_to_utf8_string(log_path_)
-                  << ", errno=" << error_no
-                  << ", message=" << (werr ? path_to_utf8_string(werr) : "unknown")
-                  << std::endl;
         return;
     }
     SetHandleInformation((HANDLE)_get_osfhandle(_fileno(file_ptr)), HANDLE_FLAG_INHERIT, 0);
