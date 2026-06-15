@@ -4,6 +4,9 @@ cmake_policy(SET CMP0155 OLD)
 
 option(BUILD_MAA_UTILS "build maa utils" ON)
 option(WITH_RPATH_LIBRARY "with rpath library for linux" ${LINUX})
+# Opt-in by the consuming project (set WITH_NCNN ON before including this file).
+# Kept OFF by default so projects that don't ship ncnn in their deps are unaffected.
+option(WITH_NCNN "find ncnn for ncnn-based OCR inference" OFF)
 
 if(WITH_RPATH_LIBRARY AND NOT DEFINED RPATH_LIBRARY_INSTALL_DIR)
     set(RPATH_LIBRARY_INSTALL_DIR bin)
@@ -28,7 +31,9 @@ find_package(Boost REQUIRED CONFIG COMPONENTS system regex)
 find_package(ZLIB REQUIRED)
 find_package(fastdeploy_ppocr REQUIRED)
 find_package(ONNXRuntime REQUIRED)
-
+if(WITH_NCNN)
+    find_package(ncnn REQUIRED)
+endif()
 find_program(CCACHE_PROG ccache)
 
 if(CCACHE_PROG)
