@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <charconv>
+#include <cstddef>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -114,6 +116,59 @@ template <typename T>
 struct has_emplace_back<T, std::void_t<decltype(std::declval<T>().emplace_back())>> : std::true_type
 {
 };
+
+template <typename T, typename = void>
+struct has_size : std::false_type
+{
+};
+
+template <typename T>
+struct has_size<T, std::void_t<decltype(std::declval<const T&>().size())>> : std::true_type
+{
+};
+
+template <typename T, typename = void>
+struct has_reserve : std::false_type
+{
+};
+
+template <typename T>
+struct has_reserve<T, std::void_t<decltype(std::declval<T&>().reserve(std::declval<size_t>()))>> : std::true_type
+{
+};
+
+template <typename T>
+constexpr bool is_json_value = std::is_same_v<std::decay_t<T>, value> || std::is_same_v<std::decay_t<T>, array>
+    || std::is_same_v<std::decay_t<T>, object>;
+
+template <typename T>
+constexpr bool should_return_string = std::is_constructible_v<std::string, T> && !is_json_value<T>;
+
+template <typename value_t>
+inline auto default_or_string(const value_t& default_value)
+{
+    if constexpr (should_return_string<value_t>) {
+        return std::string(default_value);
+    }
+    else {
+        return value_t(default_value);
+    }
+}
+
+template <typename value_t, typename json_value_t>
+inline auto json_value_or_default(const json_value_t& val, const value_t& default_value)
+{
+    if (!val.template is<value_t>()) {
+        return default_or_string(default_value);
+    }
+
+    if constexpr (should_return_string<value_t>) {
+        return val.template as<std::string>();
+    }
+    else {
+        return val.template as<value_t>();
+    }
+}
 
 template <typename T, typename = void>
 struct has_to_json_in_member : std::false_type
@@ -331,16 +386,21 @@ struct has_move_from_json_object_in_templ_spec<
 {
 };
 
-inline std::string unescape_string(const std::string& str)
+inline char hex_digit(unsigned char value) noexcept
 {
-    std::string result;
+    return static_cast<char>(value < 10 ? ('0' + value) : ('a' + value - 10));
+}
+
+inline void append_escaped_string(std::string& result, std::string_view str)
+{
     auto cur = str.cbegin();
     auto end = str.cend();
     auto no_escape_beg = cur;
     char escape = 0;
 
     for (; cur != end; ++cur) {
-        switch (*cur) {
+        const auto ch = static_cast<unsigned char>(*cur);
+        switch (ch) {
         case '"':
             escape = '"';
             break;
@@ -366,14 +426,36 @@ inline std::string unescape_string(const std::string& str)
             break;
         }
         if (escape) {
-            result += std::string(no_escape_beg, cur) + '\\' + escape;
+            result.append(no_escape_beg, cur);
+            result.push_back('\\');
+            result.push_back(escape);
             no_escape_beg = cur + 1;
             escape = 0;
         }
+        else if (ch < 0x20) {
+            result.append(no_escape_beg, cur);
+            result += "\\u00";
+            result.push_back(hex_digit(static_cast<unsigned char>(ch >> 4)));
+            result.push_back(hex_digit(static_cast<unsigned char>(ch & 0x0F)));
+            no_escape_beg = cur + 1;
+        }
     }
-    result += std::string(no_escape_beg, cur);
+    result.append(no_escape_beg, cur);
+}
+
+inline std::string escape_string(std::string_view str)
+{
+    std::string result;
+    result.reserve(str.size());
+    append_escaped_string(result, str);
 
     return result;
+}
+
+inline std::string unescape_string(const std::string& str)
+{
+    // Legacy alias: despite the old name, this escapes strings for JSON output.
+    return escape_string(str);
 }
 
 inline std::string_view true_string()
