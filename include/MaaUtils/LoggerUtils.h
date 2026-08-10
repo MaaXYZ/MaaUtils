@@ -60,11 +60,12 @@ class MAA_UTILS_API LogStream
 {
 public:
     template <typename... args_t>
-    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out, args_t&&... args)
+    LogStream(std::mutex& m, std::ofstream& s, level lv, bool std_out, bool to_file, args_t&&... args)
         : mutex_(m)
         , stream_(s)
         , lv_(lv)
         , stdout_(std_out)
+        , file_(to_file)
     {
         stream_props(std::forward<args_t>(args)...);
     }
@@ -79,7 +80,9 @@ public:
         if (stdout_) {
             std::cout << stdout_string() << std::endl;
         }
-        stream_ << std::move(buffer_).str() << std::endl;
+        if (file_) {
+            stream_ << std::move(buffer_).str() << std::endl;
+        }
     }
 
     template <typename T>
@@ -152,6 +155,7 @@ private:
     std::ofstream& stream_;
     const level lv_ = level::fatal;
     const bool stdout_ = false;
+    const bool file_ = false;
 
     separator sep_ = separator::space;
     std::stringstream buffer_;

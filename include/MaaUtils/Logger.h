@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "MaaUtils/LoggerUtils.h"
 #include "MaaUtils/ScopeLeave.hpp"
 
@@ -59,16 +61,22 @@ public:
 
     void start_logging(std::filesystem::path dir);
     void set_stdout_level(level lv);
+    void set_log_level(level lv);
+    void set_log_cleanup_days(int32_t days);
     void flush();
 
 private:
     template <typename... args_t>
     LogStream stream(level lv, args_t&&... args)
     {
-        count_and_check_flush();
-
         bool std_out = lv <= stdout_level_;
-        return LogStream(trace_mutex_, ofs_, lv, std_out, std::forward<args_t>(args)...);
+        bool to_file = lv <= log_level_;
+
+        if (to_file) {
+            count_and_check_flush();
+        }
+
+        return LogStream(trace_mutex_, ofs_, lv, std_out, to_file, std::forward<args_t>(args)...);
     }
 
 private:
@@ -93,6 +101,8 @@ private:
 #else
     level stdout_level_ = level::error;
 #endif
+    level log_level_ = level::all;
+    int32_t log_cleanup_days_ = 7;
     std::ofstream ofs_;
     std::mutex trace_mutex_;
 

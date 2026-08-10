@@ -101,6 +101,20 @@ void Logger::set_stdout_level(level lv)
     stdout_level_ = lv;
 }
 
+void Logger::set_log_level(level lv)
+{
+    log_level_ = lv;
+}
+
+void Logger::set_log_cleanup_days(int32_t days)
+{
+    log_cleanup_days_ = days;
+
+    if (log_cleanup_days_ > 0) {
+        cleanup();
+    }
+}
+
 void Logger::flush()
 {
     bool rotated = rotate();
@@ -119,9 +133,13 @@ void Logger::reinit()
     log_proc_info();
 }
 
-static void remove_old_files(const std::filesystem::path& dir)
+static void remove_old_files(const std::filesystem::path& dir, int32_t days)
 {
-    constexpr auto kMaxAge = std::chrono::hours(24 * 7); // 一周
+    if (days <= 0) {
+        return;
+    }
+
+    const auto max_age = std::chrono::hours(24LL * days);
     const auto now = std::filesystem::file_time_type::clock::now();
 
     std::error_code ec;
@@ -144,7 +162,7 @@ static void remove_old_files(const std::filesystem::path& dir)
         }
 
         auto age = now - last_write;
-        if (age > kMaxAge) {
+        if (age > max_age) {
             std::filesystem::remove(entry.path(), ec);
         }
     }
@@ -155,8 +173,11 @@ void Logger::cleanup()
     if (log_dir_.empty() || !std::filesystem::exists(log_dir_)) {
         return;
     }
+    if (log_cleanup_days_ <= 0) {
+        return;
+    }
 
-    std::thread(remove_old_files, log_dir_).detach();
+    std::thread(remove_old_files, log_dir_, log_cleanup_days_).detach();
 }
 
 bool Logger::rotate()
