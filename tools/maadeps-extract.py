@@ -34,9 +34,12 @@ def detect_host_triplet():
 
 def main():
     if len(sys.argv) == 2:
-        target_triplet = sys.argv[1]
+        target_triplet = sys.argv[1].removeprefix("maa-")
     else:
         target_triplet = detect_host_triplet()
+
+    single_name = f"MaaDeps-{target_triplet}.tar.xz"
+    single = archive_dir / single_name
 
     devel_name = f"MaaDeps-{target_triplet}-devel.tar.xz"
     runtime_name = f"MaaDeps-{target_triplet}-runtime.tar.xz"
@@ -44,16 +47,21 @@ def main():
     devel = archive_dir / devel_name
     runtime = archive_dir / runtime_name
 
-    if not devel.exists() or not runtime.exists():
-        print(f"""Please download {devel_name} and {runtime_name} from https://github.com/MaaXYZ/MaaDeps/releases/latest, and put them into {archive_dir}""")
+    if single.exists():
+        print("extracting", single)
+        shutil.unpack_archive(single, maadeps_dir)
+    elif devel.exists() and runtime.exists():
+        print("extracting", devel)
+        shutil.unpack_archive(devel, maadeps_dir)
+
+        print("extracting", runtime)
+        shutil.unpack_archive(runtime, maadeps_dir)
+    else:
+        print(
+            f"""Please download {single_name} (or {devel_name} and {runtime_name}) from https://github.com/MaaXYZ/MaaDeps/releases/latest, and put them into {archive_dir}"""
+        )
         archive_dir.mkdir(parents=True, exist_ok=True)
         return
-
-    print("extracting", devel)
-    shutil.unpack_archive(devel, maadeps_dir)
-
-    print("extracting", runtime)
-    shutil.unpack_archive(runtime, maadeps_dir)
 
 if __name__ == "__main__":
     main()

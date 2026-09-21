@@ -122,46 +122,55 @@ def main(target_triplet: str, repo: str, version: str, cache_asset: bool = False
     resp = retry_urlopen(req).read()
     release = json.loads(resp)
 
-    def split_asset_name(name: str):
-        *remainder, component_suffix = name.rsplit("-", 1)
-        component = component_suffix.split(".", 1)[0]
-        if remainder:
-            _, *target = remainder[0].split("-", 1)
-            if target:
-                return target[0], component
-        return None, None
-
+    single_asset = None
     devel_asset = None
     runtime_asset = None
-    for asset in release["assets"]:
-        target, component = split_asset_name(asset["name"])
-        if target == target_triplet:
-            if component == "devel":
-                devel_asset = asset
-            elif component == "runtime":
-                runtime_asset = asset
-    if devel_asset and runtime_asset:
-        print("found assets:")
+
+    normalized_triplet = target_triplet.removeprefix("maa-")
+    single_name = f"MaaDeps-{normalized_triplet}.tar.xz"
+    devel_name = f"MaaDeps-{normalized_triplet}-devel.tar.xz"
+    runtime_name = f"MaaDeps-{normalized_triplet}-runtime.tar.xz"
+
+    # Match the exact file names, so that assets sharing the prefix (e.g. .sha256) are never
+    # picked, and keep this in sync with maadeps_extract.py.
+    for asset in release.get("assets", []):
+        name = asset["name"]
+        if name == single_name:
+            single_asset = asset
+        elif name == devel_name:
+            devel_asset = asset
+        elif name == runtime_name:
+            runtime_asset = asset
+
+    if single_asset:
+        print("found unified asset:")
+        print("    " + single_asset["name"])
+        assets = [single_asset]
+    elif devel_asset and runtime_asset:
+        print("found legacy dual assets:")
         print("    " + devel_asset["name"])
         print("    " + runtime_asset["name"])
-        download_dir.mkdir(parents=True, exist_ok=True)
-        for asset in [devel_asset, runtime_asset]:
-            if cache_asset and check_asset_cache(asset, maadeps_dir):
-                print("using cached asset", asset["name"])
-                continue
-            url = asset["browser_download_url"]
-            print("downloading from", url)
-            local_file = download_dir / sanitize_filename(asset["name"])
-            if check_local_digest(local_file, asset["digest"]):
-                print("reusing matched digest", asset["digest"])
-            else:
-                urllib.request.urlretrieve(url, local_file, reporthook=ProgressHook())
-            print("extracting", asset["name"])
-            shutil.unpack_archive(local_file, maadeps_dir)
-            if cache_asset:
-                set_asset_cache(asset, maadeps_dir)
+        assets = [devel_asset, runtime_asset]
     else:
         raise Exception(f"no binary release found for {target_triplet}")
+
+    download_dir.mkdir(parents=True, exist_ok=True)
+    for asset in assets:
+        if cache_asset and check_asset_cache(asset, maadeps_dir):
+            print("using cached asset", asset["name"])
+            continue
+        url = asset["browser_download_url"]
+        print("downloading from", url)
+        local_file = download_dir / sanitize_filename(asset["name"])
+        digest = asset.get("digest")
+        if digest and check_local_digest(local_file, digest):
+            print("reusing matched digest", digest)
+        else:
+            urllib.request.urlretrieve(url, local_file, reporthook=ProgressHook())
+        print("extracting", asset["name"])
+        shutil.unpack_archive(local_file, maadeps_dir)
+        if cache_asset:
+            set_asset_cache(asset, maadeps_dir)
 
 
 def check_local_digest(file: Path, digest: str):
@@ -183,7 +192,10 @@ def check_local_digest(file: Path, digest: str):
 
 def check_asset_cache(asset, extract_dir: Path):
     name = asset["name"]
-    digest = asset["digest"]
+    digest = asset.get("digest")
+    if not digest:
+        # Assets without a digest cannot be validated, never treat them as cached.
+        return False
     asset_cache_file = extract_dir / ".cache_digest.json"
     if not asset_cache_file.exists():
         return False
@@ -197,7 +209,10 @@ def check_asset_cache(asset, extract_dir: Path):
 
 def set_asset_cache(asset, extract_dir: Path):
     name = asset["name"]
-    digest = asset["digest"]
+    digest = asset.get("digest")
+    if not digest:
+        # Do not record a cache entry that cannot be validated later.
+        return
     asset_cache_file = extract_dir / ".cache_digest.json"
     try:
         with open(asset_cache_file, "r") as f:
