@@ -154,7 +154,8 @@ std::optional<int> perfer_gpu()
     {
         UINT adapter_index = 0;
         std::wstring description;
-        UINT64 dedicated_video_memory;
+        UINT64 dedicated_video_memory = 0;
+        UINT vendor_id = 0;
     };
 
     std::vector<GpuInfo> available_gpus;
@@ -224,12 +225,13 @@ std::optional<int> perfer_gpu()
             continue;
         }
 
-        available_gpus.emplace_back(
-            GpuInfo { .adapter_index = adapter_index,
-                      .description = std::move(adapter_desc),
-                      .dedicated_video_memory = desc.DedicatedVideoMemory });
+        available_gpus.emplace_back(GpuInfo { .adapter_index = adapter_index,
+                                               .description = std::move(adapter_desc),
+                                               .dedicated_video_memory = desc.DedicatedVideoMemory,
+                                               .vendor_id = desc.VendorId });
 
-        LogInfo << "available gpu found" << VAR(adapter_index) << VAR(adapter_desc) << VAR(desc.DedicatedVideoMemory);
+        LogInfo << "available gpu found" << VAR(adapter_index) << VAR(available_gpus.back().description)
+                << VAR(desc.DedicatedVideoMemory) << VAR(desc.VendorId);
     }
 
     if (available_gpus.empty()) {
@@ -237,8 +239,23 @@ std::optional<int> perfer_gpu()
         return std::nullopt;
     }
 
-    // 简单按显存大小选最优，后续可能考虑更多因素
+    // 先按厂商（NVIDIA=AMD > Intel > 其他），同档再按显存
     auto best_gpu_iter = std::max_element(available_gpus.begin(), available_gpus.end(), [](const GpuInfo& lhs, const GpuInfo& rhs) {
+        // PCI VendorId: smaller rank is better
+        auto rank = [](UINT vendor_id) {
+            if (vendor_id == 0x10DE || vendor_id == 0x1002) {
+                return 0; // NVIDIA / AMD
+            }
+            if (vendor_id == 0x8086) {
+                return 1; // Intel
+            }
+            return 2;
+        };
+        const int lhs_rank = rank(lhs.vendor_id);
+        const int rhs_rank = rank(rhs.vendor_id);
+        if (lhs_rank != rhs_rank) {
+            return lhs_rank > rhs_rank;
+        }
         return lhs.dedicated_video_memory < rhs.dedicated_video_memory;
     });
 
@@ -248,7 +265,8 @@ std::optional<int> perfer_gpu()
     }
 
     const GpuInfo& best_gpu = *best_gpu_iter;
-    LogInfo << "Best gpu selected" << VAR(best_gpu.adapter_index) << VAR(best_gpu.description) << VAR(best_gpu.dedicated_video_memory);
+    LogInfo << "Best gpu selected" << VAR(best_gpu.adapter_index) << VAR(best_gpu.description)
+            << VAR(best_gpu.dedicated_video_memory) << VAR(best_gpu.vendor_id);
     return best_gpu.adapter_index;
 }
 
