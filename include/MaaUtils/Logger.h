@@ -77,7 +77,7 @@ private:
     void reinit();
     void cleanup();
     bool rotate();
-    void open(bool append = true);
+    void open(bool truncate = false);
     void close();
     void log_proc_info();
     void count_and_check_flush();
