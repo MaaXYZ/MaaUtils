@@ -11,6 +11,8 @@
 
 MAA_NS_BEGIN
 
+// Matches OBS os_inhibit_sleep_set_active:
+// https://github.com/obsproject/obs-studio/blob/50530ce9046599e698c5d2068e4f053fae2318f6/libobs/util/platform-cocoa.m#L259
 struct PreventSleep::Impl
 {
     IOPMAssertionID assertion_id = kIOPMNullAssertionID;

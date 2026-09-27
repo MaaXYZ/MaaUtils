@@ -10,7 +10,9 @@
 
 MAA_NS_BEGIN
 
-// PowerCreateRequest is used instead of SetThreadExecutionState because the latter is thread-scoped,
+// OBS uses SetThreadExecutionState:
+// https://github.com/obsproject/obs-studio/blob/50530ce9046599e698c5d2068e4f053fae2318f6/libobs/util/platform-windows.c#L1166
+// PowerCreateRequest is used instead because SetThreadExecutionState is thread-scoped,
 // so it can't be safely owned by an object that may be created and destroyed on different threads.
 struct PreventSleep::Impl
 {
