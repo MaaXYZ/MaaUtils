@@ -10,6 +10,7 @@
 MAA_NS_BEGIN
 
 // Prevents the system from idle sleeping and turning off the display while alive.
+// Implemented on Windows and macOS. Other platforms log a warning and do nothing.
 // Does not prevent the user from locking the screen manually.
 class MAA_UTILS_API PreventSleep : public NonCopyable
 {

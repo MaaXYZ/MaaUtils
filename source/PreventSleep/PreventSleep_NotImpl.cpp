@@ -1,4 +1,4 @@
-#if !defined(_WIN32) && !defined(__APPLE__) && !(defined(__linux__) && !defined(__ANDROID__))
+#if !defined(_WIN32) && !defined(__APPLE__)
 
 #include "MaaUtils/PreventSleep.h"
 
