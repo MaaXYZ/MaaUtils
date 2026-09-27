@@ -13,6 +13,10 @@ if(LINUX)
     target_link_libraries(MaaUtils PRIVATE pthread dl)
 endif()
 
+if(APPLE)
+    target_link_libraries(MaaUtils PRIVATE "-framework IOKit" "-framework CoreFoundation")
+endif()
+
 target_compile_definitions(MaaUtils PRIVATE MAA_UTILS_EXPORTS)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${maa_utils_src})
