@@ -8,6 +8,7 @@
 #include "MaaUtils/NoWarningCV.hpp"
 
 #include "MaaUtils/File.hpp"
+#include "MaaUtils/Logger.h"
 #include "MaaUtils/Platform.h"
 
 MAA_NS_BEGIN
@@ -37,7 +38,24 @@ inline bool imwrite(const std::filesystem::path& path, cv::InputArray img, const
     }
     auto ext = path_to_utf8_string(path.extension());
     std::vector<uint8_t> encoded;
-    if (!cv::imencode(ext, img, encoded, params)) {
+    bool ok = false;
+    try {
+        ok = cv::imencode(ext, img, encoded, params);
+    }
+    catch (const cv::Exception& e) {
+        LogError << "cv::imencode exception: code=" << e.code << " msg=" << e.what() << " func=" << e.func
+                 << " file=" << e.file << " line=" << e.line << " ext=" << ext;
+        return false;
+    }
+    catch (const std::exception& e) {
+        LogError << "cv::imencode std::exception: " << e.what();
+        return false;
+    }
+    catch (...) {
+        LogError << "cv::imencode unknown exception";
+        return false;
+    }
+    if (!ok) {
         return false;
     }
     std::ofstream of(path, std::ios::out | std::ios::binary);
