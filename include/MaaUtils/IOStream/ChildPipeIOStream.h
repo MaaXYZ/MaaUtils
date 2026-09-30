@@ -1,6 +1,8 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
+#include <vector>
 
 #include "IOStream.h"
 #include "MaaUtils/Port.h"
