@@ -45,9 +45,11 @@ private:
     std::filesystem::path exec_;
     std::vector<os_string> args_;
 
+#if MAAUTILS_HAS_BOOST_PROCESS
     boost::process::ipstream pin_;
     boost::process::opstream pout_;
     boost::process::child child_;
+#endif
 
     std::unique_ptr<char[]> buffer_ = nullptr;
 };
