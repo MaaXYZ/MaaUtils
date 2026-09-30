@@ -64,6 +64,7 @@ ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const st
 }
 #endif
 
+#if MAAUTILS_HAS_BOOST_PROCESS
 ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const std::vector<os_string>& args, bool)
     : exec_(exec)
     , args_(args)
@@ -147,5 +148,43 @@ std::string ChildPipeIOStream::read_once(size_t max_count)
     auto read = pin_.read(buffer_.get(), count).gcount();
     return std::string(buffer_.get(), read);
 }
+#else
+ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const std::vector<os_string>& args, bool)
+    : exec_(exec)
+    , args_(args)
+{
+    LogError << "Boost.Process is not available in this build" << VAR(exec_);
+}
+
+ChildPipeIOStream::~ChildPipeIOStream()
+{
+}
+
+bool ChildPipeIOStream::write(std::string_view)
+{
+    LogError << "Boost.Process is not available in this build" << VAR(exec_);
+    return false;
+}
+
+bool ChildPipeIOStream::release()
+{
+    return false;
+}
+
+bool ChildPipeIOStream::is_open() const
+{
+    return false;
+}
+
+bool ChildPipeIOStream::running()
+{
+    return false;
+}
+
+std::string ChildPipeIOStream::read_once(size_t)
+{
+    return { };
+}
+#endif
 
 MAA_NS_END

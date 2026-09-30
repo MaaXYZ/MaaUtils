@@ -12,20 +12,28 @@
 // while boost/process/v1/ does not exist at all.
 #if defined(__has_include)
 #if __has_include(<boost/process/v1/child.hpp>)
+#define MAAUTILS_HAS_BOOST_PROCESS 1
 #define MAAUTILS_BOOST_PROCESS_V1_HEADERS 1
+#elif __has_include(<boost/process.hpp>)
+#define MAAUTILS_HAS_BOOST_PROCESS 1
+#define MAAUTILS_BOOST_PROCESS_V1_HEADERS 0
 #else
+// Android MaaDeps does not ship Boost.Process.
+#define MAAUTILS_HAS_BOOST_PROCESS 0
 #define MAAUTILS_BOOST_PROCESS_V1_HEADERS 0
 #endif
 #else
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 108800
+#define MAAUTILS_HAS_BOOST_PROCESS 1
 #define MAAUTILS_BOOST_PROCESS_V1_HEADERS 1
 #else
+#define MAAUTILS_HAS_BOOST_PROCESS 1
 #define MAAUTILS_BOOST_PROCESS_V1_HEADERS 0
 #endif
 #endif
 
-#if MAAUTILS_BOOST_PROCESS_V1_HEADERS
+#if MAAUTILS_HAS_BOOST_PROCESS && MAAUTILS_BOOST_PROCESS_V1_HEADERS
 // BOOST_PROCESS_VERSION is read the first time a Boost.Process config header is parsed and cannot be
 // changed afterwards, so it is set right before including the v1 headers. It keeps the v1 namespace inline
 // in boost::process, which keeps names such as boost::process::child and boost::process::ipstream working
@@ -51,7 +59,7 @@
 #include <boost/process/v1/windows.hpp>
 #endif
 #pragma pop_macro("BOOST_PROCESS_VERSION")
-#else
+#elif MAAUTILS_HAS_BOOST_PROCESS
 #include <boost/process.hpp>
 #ifdef _WIN32
 #include <boost/process/extend.hpp>
