@@ -1,6 +1,8 @@
 # POSIX child-pipe regression tests
 
 Requires a C++20 compiler, CMake and Boost headers with Boost.Process v1.
+The suite requires a POSIX host; Android is explicitly rejected because its
+MaaDeps bundle does not provide Boost.Process.
 
 ```sh
 cmake -S test/iostream -B build-pipe-tests -DCMAKE_BUILD_TYPE=Debug
@@ -21,7 +23,8 @@ and partial-output stalls, missing delimiters, continuous output, a complete
 binary payload larger than the read buffer, exact byte counts, delimiter
 boundaries, reading again after timeout, stdout closing before child exit,
 nonzero and empty successful exits, inherited stdout held by a descendant,
-interrupted polling, and stdin/stdout round trips. Direct-child cleanup is
+interrupted polling, unbounded idle reads, zero/negative timeouts and empty
+read requests, and stdin/stdout round trips. Direct-child cleanup is
 checked with `waitpid`. The inherited-writer descendant exits after two seconds;
 the reader does not claim to terminate arbitrary process trees.
 
@@ -36,6 +39,12 @@ against the old blocking reader: a requested 100 ms read waits roughly two
 seconds for the writer to exit. The patched reader returns near 100 ms while
 preserving partial bytes. Timing assertions allow scheduler slack; this is a
 bounded-wait implementation, not a hard real-time guarantee.
+
+POSIX pipe reads pass the remaining timeout to `poll()`. Unbounded reads wait
+for readiness without periodic wakeups; interrupted waits recompute their
+remaining time against the original read deadline. The child stream overrides
+the existing `read_some`/`read_until` methods without adding virtual slots or
+class data members. Other stream types and Windows retain their existing reads.
 
 To run the same cases against a full framework build, link its real library
 instead of compiling the standalone sources. Use the **same Boost headers** as

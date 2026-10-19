@@ -72,6 +72,10 @@ static int child(const std::string& mode)
     else if (mode == "empty") {
         return 0;
     }
+    else if (mode == "idle" || mode == "idle_until") {
+        std::this_thread::sleep_for(300ms);
+        std::cout << "ready\ntail";
+    }
     else if (mode == "inherited_stdout") {
         pid_t pid = fork();
         if (pid < 0) {
@@ -88,7 +92,7 @@ static int child(const std::string& mode)
         close(STDOUT_FILENO);
         std::this_thread::sleep_for(2s);
     }
-    else if (mode == "silent" || mode == "interrupted") {
+    else if (mode == "silent" || mode == "interrupted" || mode == "no_read") {
         std::this_thread::sleep_for(2s);
     }
     else {
@@ -132,6 +136,22 @@ static void run(const std::filesystem::path& executable, const std::string& mode
         result = stream.read_until("\n", 3s);
         require(result == std::string(16 * 1024, 'x') + "\n", "long delimiter read lost data");
         require(stream.read_some(4, 100ms) == "tail", "long delimiter read consumed the tail");
+    }
+    else if (mode == "idle") {
+        result = stream.read();
+        require(result == "ready\ntail" && stream.eof(), "unbounded read lost output or EOF");
+    }
+    else if (mode == "idle_until") {
+        result = stream.read_until("\n");
+        require(result == "ready\n", "unbounded delimiter read failed");
+        require(stream.read() == "tail" && stream.eof(), "unbounded delimiter read consumed the tail");
+    }
+    else if (mode == "no_read") {
+        require(stream.read_some(0).empty(), "zero-count read returned data");
+        require(stream.read_until("").empty(), "empty delimiter read returned data");
+        require(stream.read(0ms).empty(), "zero-timeout read returned data");
+        require(stream.read(-1ms).empty(), "negative-timeout read returned data");
+        require(stream.is_open() && !stream.eof(), "empty reads changed pipe state");
     }
     else {
         result = stream.read(mode == "binary" ? 3s : 100ms);
@@ -194,6 +214,9 @@ static void run(const std::filesystem::path& executable, const std::string& mode
         }
         if (mode == "empty") {
             require(success, "empty successful exit was reported as a failure");
+        }
+        if (mode == "idle" || mode == "idle_until") {
+            require(elapsed >= 250ms && success, "unbounded read did not wait for the delayed writer");
         }
     }
     // Direct children must have been reaped, including forced termination.
