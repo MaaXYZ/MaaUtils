@@ -35,6 +35,9 @@ public:
 
     bool running();
 
+    // A timed read or an I/O error is not successful stdout completion.
+    bool eof() const;
+
 protected:
     virtual std::string read_once(size_t max_count) override;
 
