@@ -30,10 +30,16 @@ public:
 public:
     virtual bool write(std::string_view data) override;
 
+    virtual std::string read_some(size_t count, duration_t timeout = duration_t::max()) override;
+    virtual std::string read_until(std::string_view delimiter, duration_t timeout = duration_t::max()) override;
+
     virtual bool release() override;
     virtual bool is_open() const override;
 
     bool running();
+
+    // A timed read or an I/O error is not successful stdout completion.
+    bool eof() const;
 
 protected:
     virtual std::string read_once(size_t max_count) override;
@@ -42,6 +48,8 @@ private:
     using os_string = std::filesystem::path::string_type;
 
     ChildPipeIOStream(const std::filesystem::path& exec, const std::vector<os_string>& args, bool);
+
+    std::string read_once(size_t max_count, duration_t timeout);
 
 private:
     std::filesystem::path exec_;

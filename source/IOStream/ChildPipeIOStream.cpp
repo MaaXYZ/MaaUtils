@@ -2,6 +2,15 @@
 
 #include "MaaUtils/Encoding.h"
 #include "MaaUtils/Logger.h"
+#include "MaaUtils/Time.hpp"
+
+#if MAAUTILS_HAS_BOOST_PROCESS && !defined(_WIN32)
+#include <cerrno>
+#include <fcntl.h>
+#include <limits>
+#include <poll.h>
+#include <unistd.h>
+#endif
 
 MAA_NS_BEGIN
 
@@ -64,6 +73,44 @@ ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const st
 }
 #endif
 
+std::string ChildPipeIOStream::read_some(size_t count, duration_t timeout)
+{
+#if MAAUTILS_HAS_BOOST_PROCESS && !defined(_WIN32)
+    const auto start = std::chrono::steady_clock::now();
+    std::string result;
+    while (is_open() && result.size() < count) {
+        const auto elapsed = duration_since(start);
+        if (elapsed >= timeout) {
+            break;
+        }
+        const auto remaining = timeout == duration_t::max() ? timeout : timeout - elapsed;
+        result.append(read_once(count - result.size(), remaining));
+    }
+    return result;
+#else
+    return IOStream::read_some(count, timeout);
+#endif
+}
+
+std::string ChildPipeIOStream::read_until(std::string_view delimiter, duration_t timeout)
+{
+#if MAAUTILS_HAS_BOOST_PROCESS && !defined(_WIN32)
+    const auto start = std::chrono::steady_clock::now();
+    std::string result;
+    while (is_open() && !result.ends_with(delimiter)) {
+        const auto elapsed = duration_since(start);
+        if (elapsed >= timeout) {
+            break;
+        }
+        const auto remaining = timeout == duration_t::max() ? timeout : timeout - elapsed;
+        result.append(read_once(1, remaining));
+    }
+    return result;
+#else
+    return IOStream::read_until(delimiter, timeout);
+#endif
+}
+
 #if MAAUTILS_HAS_BOOST_PROCESS
 ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const std::vector<os_string>& args, bool)
     : exec_(exec)
@@ -83,6 +130,17 @@ ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const st
       )
 {
     LogDebug << VAR(exec_) << VAR(args_) << VAR(child_.id());
+#ifndef _WIN32
+    // Read stdout directly: istream::read waits for count bytes or EOF, so a
+    // child holding a partial buffer open can bypass IOStream's timeout forever.
+    const int fd = pin_.pipe().native_source();
+    const int flags = fcntl(fd, F_GETFL);
+    if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        const int error = errno;
+        LogError << "cannot make child stdout nonblocking" << VAR(error) << VAR(child_.id());
+        pin_.setstate(std::ios::badbit);
+    }
+#endif
 }
 
 ChildPipeIOStream::~ChildPipeIOStream()
@@ -128,7 +186,11 @@ bool ChildPipeIOStream::release()
 
 bool ChildPipeIOStream::is_open() const
 {
+#ifdef _WIN32
     return !pin_.eof();
+#else
+    return !pin_.eof() && !pin_.bad();
+#endif
 }
 
 bool ChildPipeIOStream::running()
@@ -136,7 +198,17 @@ bool ChildPipeIOStream::running()
     return child_.running();
 }
 
+bool ChildPipeIOStream::eof() const
+{
+    return pin_.eof() && !pin_.bad();
+}
+
 std::string ChildPipeIOStream::read_once(size_t max_count)
+{
+    return read_once(max_count, duration_t::max());
+}
+
+std::string ChildPipeIOStream::read_once(size_t max_count, duration_t timeout)
 {
     constexpr size_t kBufferSize = 128 * 1024;
 
@@ -145,8 +217,47 @@ std::string ChildPipeIOStream::read_once(size_t max_count)
     }
 
     size_t count = std::min(kBufferSize, max_count);
+#ifdef _WIN32
+    (void)timeout;
     auto read = pin_.read(buffer_.get(), count).gcount();
     return std::string(buffer_.get(), read);
+#else
+    if (count == 0 || !is_open()) {
+        return { };
+    }
+
+    // Wait for the remaining deadline, or indefinitely for an unbounded read.
+    // O_NONBLOCK protects the read after poll; interrupted waits return to the
+    // outer loop to recompute the remaining time against the original deadline.
+    pollfd descriptor { pin_.pipe().native_source(), POLLIN, 0 };
+    const int wait_ms =
+        timeout == duration_t::max() ? -1 : static_cast<int>(std::min<duration_t::rep>(timeout.count(), std::numeric_limits<int>::max()));
+    const int ready = poll(&descriptor, 1, wait_ms);
+    if (ready == 0 || (ready < 0 && errno == EINTR)) {
+        return { };
+    }
+    if (ready < 0) {
+        const int error = errno;
+        LogError << "poll child stdout failed" << VAR(error) << VAR(child_.id());
+        pin_.setstate(std::ios::badbit);
+        return { };
+    }
+
+    // POLLHUP may accompany unread data. Drain it before marking EOF.
+    const auto bytes_read = ::read(descriptor.fd, buffer_.get(), count);
+    if (bytes_read > 0) {
+        return std::string(buffer_.get(), static_cast<size_t>(bytes_read));
+    }
+    if (bytes_read == 0) {
+        pin_.setstate(std::ios::eofbit);
+    }
+    else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+        const int error = errno;
+        LogError << "read child stdout failed" << VAR(error) << VAR(child_.id());
+        pin_.setstate(std::ios::badbit);
+    }
+    return { };
+#endif
 }
 #else
 ChildPipeIOStream::ChildPipeIOStream(const std::filesystem::path& exec, const std::vector<os_string>& args, bool)
@@ -181,7 +292,17 @@ bool ChildPipeIOStream::running()
     return false;
 }
 
+bool ChildPipeIOStream::eof() const
+{
+    return false;
+}
+
 std::string ChildPipeIOStream::read_once(size_t)
+{
+    return { };
+}
+
+std::string ChildPipeIOStream::read_once(size_t, duration_t)
 {
     return { };
 }
