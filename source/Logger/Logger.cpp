@@ -86,13 +86,21 @@ Logger& Logger::get_instance()
 
 void Logger::start_logging(std::filesystem::path dir)
 {
-    log_dir_ = std::move(dir);
-    if (log_dir_.empty()) {
-        log_path_.clear();
+    {
+        std::unique_lock init_lock(perf_init_mutex_);
+
+        log_dir_ = std::move(dir);
+        if (log_dir_.empty()) {
+            log_path_.clear();
+        }
+        else {
+            log_path_ = log_dir_ / kLogFilename;
+        }
+
+        perf_reset_locked();
+        perf_try_open_locked();
     }
-    else {
-        log_path_ = log_dir_ / kLogFilename;
-    }
+
     reinit();
 }
 
@@ -134,7 +142,7 @@ static void remove_old_files(const std::filesystem::path& dir)
         }
 
         const auto ext = path_to_utf8_string(entry.path().extension());
-        if (ext != ".log" && ext != ".jpg" && ext != ".png") {
+        if (ext != ".log" && ext != ".jpg" && ext != ".png" && ext != ".csv") {
             continue;
         }
 
@@ -219,9 +227,15 @@ void Logger::close()
     internal_dbg() << "Close log";
     internal_dbg() << kSplitLine;
 
-    std::unique_lock trace_lock(trace_mutex_);
-    if (ofs_.is_open()) {
-        ofs_.close();
+    {
+        std::unique_lock trace_lock(trace_mutex_);
+        if (ofs_.is_open()) {
+            ofs_.close();
+        }
+    }
+    {
+        std::unique_lock init_lock(perf_init_mutex_);
+        perf_close_locked();
     }
 }
 
@@ -284,6 +298,74 @@ void Logger::count_and_check_flush()
 LogStream Logger::internal_dbg()
 {
     return debug("Logger");
+}
+
+PerfLogStream Logger::perf_stream()
+{
+    std::unique_lock init_lock(perf_init_mutex_);
+    // 注意: 此处返回的 PerfLogStream 析构时会拿 perf_mutex_ 写。
+    // 若 perf_ofs_ 没打开（log_dir 空，或打开失败），PerfLogStream 析构静默丢弃。
+    return PerfLogStream(perf_mutex_, perf_ofs_);
+}
+
+void Logger::perf_reset_locked()
+{
+    // 切换 log_dir 时重置 perf 通道，随后由 start_logging() 按新目录重开
+    perf_close_locked();
+    perf_initialized_ = false;
+}
+
+void Logger::perf_try_open_locked()
+{
+    if (perf_initialized_) {
+        return;
+    }
+    if (log_dir_.empty()) {
+        return;
+    }
+
+    std::error_code ec;
+    const std::filesystem::path perf_dir = log_dir_ / kPerfTraceSubdir;
+    std::filesystem::create_directories(perf_dir, ec);
+    if (ec) {
+        return;
+    }
+
+    const auto filename = std::format(kPerfTraceFilenameFormat, format_now_for_filename());
+    const std::filesystem::path perf_path = perf_dir / filename;
+
+    {
+        std::unique_lock perf_lock(perf_mutex_);
+        if (perf_ofs_.is_open()) {
+            perf_ofs_.close();
+        }
+#ifdef _WIN32
+        std::string str_path = perf_path.string();
+        FILE* fp = fopen(str_path.c_str(), "w");
+        if (!fp) {
+            return;
+        }
+        SetHandleInformation((HANDLE)_get_osfhandle(_fileno(fp)), HANDLE_FLAG_INHERIT, 0);
+        perf_ofs_ = std::ofstream(fp);
+#else
+        perf_ofs_ = std::ofstream(perf_path, std::ios::out | std::ios::trunc);
+#endif
+        if (!perf_ofs_.is_open()) {
+            return;
+        }
+        perf_ofs_ << kPerfTraceCsvHeader << '\n';
+    }
+
+    perf_initialized_ = true;
+}
+
+void Logger::perf_close_locked()
+{
+    std::unique_lock perf_lock(perf_mutex_);
+    if (perf_ofs_.is_open()) {
+        perf_ofs_.flush();
+        perf_ofs_.close();
+    }
 }
 
 MAA_LOG_NS_END
