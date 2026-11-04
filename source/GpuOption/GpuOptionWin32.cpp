@@ -147,7 +147,7 @@ std::optional<int> perfer_gpu()
     HRESULT ret = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(&dxgi_factory));
     if (FAILED(ret)) {
         LogError << "CreateDXGIFactory2 failed" << VAR(ret);
-        return false;
+        return std::nullopt;
     }
 
     struct GpuInfo
