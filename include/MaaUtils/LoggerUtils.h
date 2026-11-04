@@ -157,4 +157,48 @@ private:
     std::stringstream buffer_;
 };
 
+// perf trace 通道专用流。
+//
+// 跟 LogStream 的关键差别:
+//   1. 不写任何默认前缀 (无 timestamp/level/pid/tid 头部)，调用方完全控制行内容
+//   2. 不写 stdout
+//   3. 不做 json 特殊化处理，纯粹 ostream 风格拼接
+//   4. 使用独立的 perf 文件 + 独立的 mutex，跟主日志互不干扰
+//
+// 析构时把 buffer 一次性原子追加一行到 perf 文件 (含尾部换行)。
+// 若 perf 文件未打开 (例如 log_dir 尚未配置)，析构静默丢弃，不抛错。
+class MAA_UTILS_API PerfLogStream
+{
+public:
+    PerfLogStream(std::mutex& m, std::ofstream& s)
+        : mutex_(m)
+        , stream_(s)
+    {
+    }
+
+    PerfLogStream(const PerfLogStream&) = delete;
+    PerfLogStream(PerfLogStream&&) = delete;
+
+    ~PerfLogStream()
+    {
+        std::unique_lock lock(mutex_);
+        if (stream_.is_open()) {
+            stream_ << buffer_.str() << '\n';
+        }
+    }
+
+    template <typename T>
+        requires has_output_operator<T>
+    PerfLogStream& operator<<(T&& value)
+    {
+        buffer_ << std::forward<T>(value);
+        return *this;
+    }
+
+private:
+    std::mutex& mutex_;
+    std::ofstream& stream_;
+    std::ostringstream buffer_;
+};
+
 MAA_LOG_NS_END
