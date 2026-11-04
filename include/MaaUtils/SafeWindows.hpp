@@ -12,4 +12,5 @@
 
 #include <windows.h>
 
+#include <psapi.h>
 #include <shellapi.h>

@@ -16,6 +16,18 @@ const std::filesystem::path& library_dir()
     return s_library_dir_cache;
 }
 
+std::filesystem::path get_library_path(void* addr)
+{
+    WCHAR path_buf[MAX_PATH + 5];
+    DWORD path_len = GetMappedFileNameW(GetCurrentProcess(), addr, path_buf, MAX_PATH);
+
+    if (path_len == 0) {
+        return {};
+    }
+
+    return { path_buf };
+}
+
 void init_library_dir(HINSTANCE hinstDLL)
 {
     WCHAR buffer[MAX_PATH] = { 0 };
