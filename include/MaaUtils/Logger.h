@@ -1,5 +1,7 @@
 #pragma once
 
+#include <future>
+
 #include "MaaUtils/LoggerUtils.h"
 #include "MaaUtils/ScopeLeave.hpp"
 
@@ -60,6 +62,7 @@ public:
     void start_logging(std::filesystem::path dir);
     void set_stdout_level(level lv);
     void flush();
+    void cleanup(bool force = false);
 
 private:
     template <typename... args_t>
@@ -75,7 +78,6 @@ private:
     Logger() = default;
 
     void reinit();
-    void cleanup();
     bool rotate();
     void open(bool append = true);
     void close();
@@ -97,6 +99,9 @@ private:
     std::mutex trace_mutex_;
 
     size_t log_count_ = 0;
+    std::mutex cleanup_mutex_;
+    std::chrono::steady_clock::time_point last_cleanup_ {};
+    std::future<void> cleanup_task_;
 };
 
 class LogScopeEnterHelper

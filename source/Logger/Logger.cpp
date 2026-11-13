@@ -15,6 +15,7 @@
 #include <sys/utsname.h>
 #endif
 
+#include "LogMaintenance.h"
 #include "MaaUtils/Encoding.h"
 #include "MaaUtils/ImageIo.h"
 #include "MaaUtils/Platform.h"
@@ -86,6 +87,13 @@ Logger& Logger::get_instance()
 
 void Logger::start_logging(std::filesystem::path dir)
 {
+    {
+        std::unique_lock lock(cleanup_mutex_);
+        // Finish work in the previous directory before switching or disabling logging.
+        if (cleanup_task_.valid()) {
+            cleanup_task_.wait();
+        }
+    }
     log_dir_ = std::move(dir);
     if (log_dir_.empty()) {
         log_path_.clear();
@@ -109,54 +117,40 @@ void Logger::flush()
     if (rotated) {
         log_proc_info();
     }
+    cleanup(rotated);
 }
 
 void Logger::reinit()
 {
-    cleanup();
     bool rotated = rotate();
     open(!rotated);
     log_proc_info();
+    cleanup(true);
 }
 
-static void remove_old_files(const std::filesystem::path& dir)
+void Logger::cleanup(bool force)
 {
-    constexpr auto kMaxAge = std::chrono::hours(24 * 7); // 一周
-    const auto now = std::filesystem::file_time_type::clock::now();
-
-    std::error_code ec;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(dir, ec)) {
-        if (ec) {
-            break;
-        }
-        if (!entry.is_regular_file(ec) || ec) {
-            continue;
-        }
-
-        const auto ext = path_to_utf8_string(entry.path().extension());
-        if (ext != ".log" && ext != ".jpg" && ext != ".png") {
-            continue;
-        }
-
-        auto last_write = entry.last_write_time(ec);
-        if (ec) {
-            continue;
-        }
-
-        auto age = now - last_write;
-        if (age > kMaxAge) {
-            std::filesystem::remove(entry.path(), ec);
-        }
-    }
-}
-
-void Logger::cleanup()
-{
-    if (log_dir_.empty() || !std::filesystem::exists(log_dir_)) {
+    if (log_dir_.empty()) {
         return;
     }
-
-    std::thread(remove_old_files, log_dir_).detach();
+    std::unique_lock lock(cleanup_mutex_);
+    const auto now = std::chrono::steady_clock::now();
+    if (cleanup_task_.valid() && cleanup_task_.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
+        return;
+    }
+    if (!force && now - last_cleanup_ < std::chrono::minutes(5)) {
+        return;
+    }
+    try {
+        if (cleanup_task_.valid()) {
+            cleanup_task_.get();
+        }
+        cleanup_task_ = start_log_maintenance(log_dir_);
+        last_cleanup_ = now;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Log maintenance failed: " << e.what() << std::endl;
+    }
 }
 
 bool Logger::rotate()
@@ -170,7 +164,7 @@ bool Logger::rotate()
         ofs_.close();
     }
 
-    constexpr uintmax_t MaxLogSize = 16ULL * 1024 * 1024;
+    constexpr uintmax_t MaxLogSize = 128ULL * 1024 * 1024;
     const uintmax_t log_size = std::filesystem::file_size(log_path_);
     if (log_size < MaxLogSize) {
         return false;
@@ -179,8 +173,20 @@ bool Logger::rotate()
     std::error_code ec;
 
     const std::filesystem::path bak_path = log_dir_ / std::format(kLogbakFilename, format_now_for_filename());
-    std::filesystem::copy(log_path_, bak_path, std::filesystem::copy_options::overwrite_existing, ec);
-
+    auto temporary = bak_path;
+    temporary += ".tmp";
+    // Publish only complete backups. A failed backup must not truncate the active log.
+    if (!std::filesystem::copy_file(log_path_, temporary, std::filesystem::copy_options::none, ec)) {
+        if (ec != std::errc::file_exists) {
+            std::filesystem::remove(temporary, ec);
+        }
+        return false;
+    }
+    std::filesystem::rename(temporary, bak_path, ec);
+    if (ec) {
+        std::filesystem::remove(temporary, ec);
+        return false;
+    }
     return true;
 }
 
