@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <memory>
+#include <system_error>
 #include <vector>
 
 #include <zlib.h>
@@ -10,6 +12,10 @@
 #include "MaaUtils/Platform.h"
 #include "MaaUtils/ScopeLeave.hpp"
 #include "MaaUtils/Time.hpp"
+
+#ifdef _WIN32
+#include "MaaUtils/SafeWindows.hpp"
+#endif
 
 MAA_LOG_NS_BEGIN
 
@@ -31,6 +37,21 @@ struct LogArtifact
     ArtifactKind kind = ArtifactKind::Log;
 };
 
+#ifdef _WIN32
+struct MaintenanceTask
+{
+    std::packaged_task<void()> run;
+    HMODULE library = nullptr;
+};
+
+void CALLBACK run_maintenance(PTP_CALLBACK_INSTANCE instance, void* context)
+{
+    std::unique_ptr<MaintenanceTask> task(static_cast<MaintenanceTask*>(context));
+    FreeLibraryWhenCallbackReturns(instance, task->library);
+    task->run();
+}
+#endif
+
 bool compress_log(LogArtifact& artifact)
 {
     auto archive = artifact.path;
@@ -47,9 +68,9 @@ bool compress_log(LogArtifact& artifact)
         return false;
     }
 #ifdef _WIN32
-    gzFile output = gzopen_w(temporary.c_str(), "wb1x");
+    gzFile output = gzopen_w(temporary.c_str(), "wb6x");
 #else
-    gzFile output = gzopen(temporary.c_str(), "wb1x");
+    gzFile output = gzopen(temporary.c_str(), "wb6x");
 #endif
     if (!output) {
         return false;
@@ -181,6 +202,29 @@ void maintain_log_files(const std::filesystem::path& dir)
             total_size -= artifact.size;
         }
     }
+}
+
+std::future<void> start_log_maintenance(const std::filesystem::path& dir)
+{
+#ifdef _WIN32
+    // DLL teardown must not wait for workers that Windows terminates at process exit.
+    // Keep MaaUtils loaded until the callback returns during normal library unloading.
+    auto task = std::make_unique<MaintenanceTask>();
+    task->run = std::packaged_task<void()>([dir] { maintain_log_files(dir); });
+    auto future = task->run.get_future();
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(&run_maintenance), &task->library)) {
+        throw std::system_error(GetLastError(), std::system_category(), "Hold MaaUtils for log maintenance");
+    }
+    if (!TrySubmitThreadpoolCallback(run_maintenance, task.get(), nullptr)) {
+        auto error = GetLastError();
+        FreeLibrary(task->library);
+        throw std::system_error(error, std::system_category(), "Start log maintenance");
+    }
+    task.release();
+    return future;
+#else
+    return std::async(std::launch::async, maintain_log_files, dir);
+#endif
 }
 
 MAA_LOG_NS_END

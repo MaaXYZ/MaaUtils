@@ -87,6 +87,13 @@ Logger& Logger::get_instance()
 
 void Logger::start_logging(std::filesystem::path dir)
 {
+    {
+        std::unique_lock lock(cleanup_mutex_);
+        // Finish work in the previous directory before switching or disabling logging.
+        if (cleanup_task_.valid()) {
+            cleanup_task_.wait();
+        }
+    }
     log_dir_ = std::move(dir);
     if (log_dir_.empty()) {
         log_path_.clear();
@@ -138,8 +145,7 @@ void Logger::cleanup(bool force)
         if (cleanup_task_.valid()) {
             cleanup_task_.get();
         }
-        // The future joins on destruction, so the worker cannot outlive MaaUtils.
-        cleanup_task_ = std::async(std::launch::async, maintain_log_files, log_dir_);
+        cleanup_task_ = start_log_maintenance(log_dir_);
         last_cleanup_ = now;
     }
     catch (const std::exception& e) {
