@@ -79,7 +79,7 @@ private:
 
     void reinit();
     bool rotate();
-    void open(bool append = true);
+    void open();
     void close();
     void log_proc_info();
     void count_and_check_flush();

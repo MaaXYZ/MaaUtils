@@ -112,7 +112,7 @@ void Logger::set_stdout_level(level lv)
 void Logger::flush()
 {
     bool rotated = rotate();
-    open(!rotated);
+    open();
 
     if (rotated) {
         log_proc_info();
@@ -122,8 +122,8 @@ void Logger::flush()
 
 void Logger::reinit()
 {
-    bool rotated = rotate();
-    open(!rotated);
+    rotate();
+    open();
     log_proc_info();
     cleanup(true);
 }
@@ -187,10 +187,14 @@ bool Logger::rotate()
         std::filesystem::remove(temporary, ec);
         return false;
     }
+
+    // Keep the active log empty for the append-only writer. A failed truncation leaves the old
+    // contents in place; reopening in append mode must still proceed.
+    std::filesystem::resize_file(log_path_, 0, ec);
     return true;
 }
 
-void Logger::open(bool append)
+void Logger::open()
 {
     if (log_path_.empty()) {
         return;
@@ -202,10 +206,13 @@ void Logger::open(bool append)
         ofs_.close();
     }
 
+    // A long-lived truncating stream keeps its old offset if another process truncates the shared log.
+    // Keep every long-lived writer in append mode.
+
 #ifdef _WIN32
 
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
-    FILE* file_ptr = _wfopen(log_path_.c_str(), append ? L"a" : L"w");
+    FILE* file_ptr = _wfopen(log_path_.c_str(), L"a");
     if (!file_ptr) {
         return;
     }
@@ -214,7 +221,7 @@ void Logger::open(bool append)
 
 #else
 
-    ofs_ = std::ofstream(log_path_, std::ios::out | (append ? std::ios::app : std::ios::trunc));
+    ofs_ = std::ofstream(log_path_, std::ios::out | std::ios::app);
 
 #endif
 }
