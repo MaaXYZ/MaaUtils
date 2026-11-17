@@ -197,19 +197,16 @@ void Logger::open(bool truncate)
     }
 
     // A long-lived truncating stream keeps its old offset if another process truncates the shared log.
-    // Truncate with a short-lived stream, then keep every writer in append mode.
+    // Resize the file explicitly and keep every long-lived writer in append mode; a failed truncation
+    // must not prevent reopening the logger.
+    if (truncate) {
+        std::error_code ec;
+        std::filesystem::resize_file(log_path_, 0, ec);
+    }
 
 #ifdef _WIN32
 
     // https://stackoverflow.com/questions/55513974/controlling-inheritability-of-file-handles-created-by-c-stdfstream-in-window
-    if (truncate) {
-        FILE* truncate_file_ptr = _wfopen(log_path_.c_str(), L"w");
-        if (!truncate_file_ptr) {
-            return;
-        }
-        fclose(truncate_file_ptr);
-    }
-
     FILE* file_ptr = _wfopen(log_path_.c_str(), L"a");
     if (!file_ptr) {
         return;
@@ -218,13 +215,6 @@ void Logger::open(bool truncate)
     ofs_ = std::ofstream(file_ptr);
 
 #else
-
-    if (truncate) {
-        std::ofstream truncate_stream(log_path_, std::ios::out | std::ios::trunc);
-        if (!truncate_stream) {
-            return;
-        }
-    }
 
     ofs_ = std::ofstream(log_path_, std::ios::out | std::ios::app);
 
