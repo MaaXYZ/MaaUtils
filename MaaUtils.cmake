@@ -1,6 +1,6 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-cmake_policy(SET CMP0155 OLD)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(BUILD_MAA_UTILS "build maa utils" ON)
 option(WITH_RPATH_LIBRARY "with rpath library for linux" ${LINUX})
