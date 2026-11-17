@@ -112,7 +112,7 @@ void Logger::set_stdout_level(level lv)
 void Logger::flush()
 {
     bool rotated = rotate();
-    open(rotated);
+    open();
 
     if (rotated) {
         log_proc_info();
@@ -122,8 +122,8 @@ void Logger::flush()
 
 void Logger::reinit()
 {
-    bool rotated = rotate();
-    open(rotated);
+    rotate();
+    open();
     log_proc_info();
     cleanup(true);
 }
@@ -187,10 +187,14 @@ bool Logger::rotate()
         std::filesystem::remove(temporary, ec);
         return false;
     }
+
+    // Keep the active log empty for the append-only writer. A failed truncation leaves the old
+    // contents in place; reopening in append mode must still proceed.
+    std::filesystem::resize_file(log_path_, 0, ec);
     return true;
 }
 
-void Logger::open(bool truncate)
+void Logger::open()
 {
     if (log_path_.empty()) {
         return;
@@ -203,12 +207,7 @@ void Logger::open(bool truncate)
     }
 
     // A long-lived truncating stream keeps its old offset if another process truncates the shared log.
-    // Resize the file explicitly and keep every long-lived writer in append mode; a failed truncation
-    // must not prevent reopening the logger.
-    if (truncate) {
-        std::error_code ec;
-        std::filesystem::resize_file(log_path_, 0, ec);
-    }
+    // Keep every long-lived writer in append mode.
 
 #ifdef _WIN32
 
